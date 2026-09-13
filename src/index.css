@@ -603,14 +603,23 @@ p {
 }
 
 .flash-stage {
-  max-width: 480px;
+  max-width: 560px;
+  width: 100%;
   margin: 0 auto;
   perspective: 1000px;
 }
 
 .flash-card {
   position: relative;
+  display: block;
+  width: 100%;
   min-height: 320px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
   transform-style: preserve-3d;
   transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
   cursor: pointer;
@@ -642,11 +651,15 @@ p {
 }
 
 .flash-face h2 {
-  font-size: 1.4rem;
+  font-size: 1.15rem;
+  text-align: center;
+  margin: 0;
 }
 
 .flash-face p {
   color: var(--muted);
+  text-align: center;
+  max-width: 40ch;
 }
 
 .stat-row {
