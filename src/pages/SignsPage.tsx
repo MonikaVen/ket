@@ -38,7 +38,8 @@ export function SignsPage() {
           <span className="eyebrow">1 priedas</span>
           <h1>Kelio ženklai</h1>
           <p>
-            Oficialūs KET 2026 numeriai ir grupės. Pažymėkite išmoktus ir kartokite kortelėmis.
+            Oficialūs KET 2026 numeriai; pavyzdžiai nukirpti iš 1 priedo. Pažymėkite išmoktus ir
+            kartokite kortelėmis.
           </p>
         </div>
         <Link className="btn btn-primary" to="/korteles">

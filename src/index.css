@@ -543,6 +543,20 @@ p {
   width: 88px;
   height: 88px;
   margin: 0 auto 0.85rem;
+  object-fit: contain;
+  display: block;
+}
+
+.detail-panel .sign-visual {
+  width: 140px;
+  height: 140px;
+  margin: 0;
+}
+
+.flash-card .sign-visual {
+  width: 120px;
+  height: 120px;
+  margin: 0;
 }
 
 .sign-card h3 {

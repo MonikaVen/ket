@@ -9,6 +9,7 @@ export const signCategories: { id: SignCategory; title: string; hint: string }[]
   { id: 'papildomi', title: 'Papildomos lentelės', hint: 'Po pagrindiniu ženklu' },
 ];
 
+/** Catalog signs; pictures are official 1 priedas crops in `/signs/{code}.png`. */
 export const signs: RoadSign[] = [
   {
     id: 's-pervaza-uztvaras',

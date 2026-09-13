@@ -152,9 +152,7 @@ function FlashCardView({
     >
       <div className="flash-face">
         {sign ? (
-          <div style={{ width: 120, height: 120 }}>
-            <SignVisual sign={sign} className="sign-visual" />
-          </div>
+          <SignVisual sign={sign} className="sign-visual" />
         ) : (
           <h2 style={{ fontSize: '1.25rem', textAlign: 'center' }}>{card.front}</h2>
         )}
