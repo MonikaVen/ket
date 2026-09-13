@@ -197,7 +197,8 @@ async function handle(req, res) {
     }
     const front = String(body.front || '').trim();
     const back = String(body.back || '').trim();
-    const kind = body.kind === 'rule' || body.kind === 'sign' ? body.kind : 'concept';
+    const kind =
+      body.kind === 'rule' || body.kind === 'sign' || body.kind === 'question' ? body.kind : 'concept';
     if (!front || !back) {
       send(res, 400, { error: 'Įrašykite sąvoką ir paaiškinimą.' });
       return;
@@ -208,6 +209,7 @@ async function handle(req, res) {
       front,
       back,
       sourceId: body.sourceId ? String(body.sourceId) : undefined,
+      prompt: body.prompt === 'text' || body.prompt === 'visual' ? body.prompt : undefined,
       ownerId: user.id,
       createdAt: new Date().toISOString(),
     };
@@ -215,6 +217,60 @@ async function handle(req, res) {
       s.userCards[user.id] = [...(s.userCards[user.id] || []), card];
     });
     send(res, 200, { card });
+    return;
+  }
+
+  if (method === 'POST' && path === '/cards/batch') {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
+    const incoming = Array.isArray(body.cards) ? body.cards : [];
+    if (!incoming.length) {
+      send(res, 400, { error: 'Nėra kortelių.' });
+      return;
+    }
+    const created = [];
+    let skipped = 0;
+    updateStore((s) => {
+      const existing = s.userCards[user.id] || [];
+      const next = [...existing];
+      for (const item of incoming.slice(0, 200)) {
+        const front = String(item.front || '').trim();
+        const back = String(item.back || '').trim();
+        if (!front || !back) {
+          skipped += 1;
+          continue;
+        }
+        const sourceId = item.sourceId ? String(item.sourceId) : undefined;
+        const dup = next.some(
+          (c) => (sourceId && c.sourceId === sourceId) || (c.front === front && c.back === back),
+        );
+        if (dup) {
+          skipped += 1;
+          continue;
+        }
+        const kind =
+          item.kind === 'rule' || item.kind === 'sign' || item.kind === 'question'
+            ? item.kind
+            : 'concept';
+        const card = {
+          id: randomUUID(),
+          kind,
+          front,
+          back,
+          sourceId,
+          prompt: item.prompt === 'text' || item.prompt === 'visual' ? item.prompt : undefined,
+          ownerId: user.id,
+          createdAt: new Date().toISOString(),
+        };
+        next.push(card);
+        created.push(card);
+      }
+      s.userCards[user.id] = next;
+    });
+    send(res, 200, { cards: created, skipped });
     return;
   }
 

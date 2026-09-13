@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { SignVisual } from '../components/SignVisual';
 import { signCategories, signs } from '../data/signs';
 import type { SignCategory } from '../data/types';
+import { useCards } from '../hooks/useCards';
 import { useProgress } from '../hooks/useProgress';
 
 export function SignsPage() {
@@ -10,6 +11,8 @@ export function SignsPage() {
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
   const { progress, markSignMastered } = useProgress();
+  const { addSignDescriptionCards, hasSource } = useCards();
+  const [cardMsg, setCardMsg] = useState('');
   const detailRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
@@ -42,10 +45,28 @@ export function SignsPage() {
             kartokite kortelėmis.
           </p>
         </div>
-        <Link className="btn btn-primary" to="/korteles">
-          Kortelės
-        </Link>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            onClick={async () => {
+              const r = await addSignDescriptionCards(signs);
+              setCardMsg(
+                r.added
+                  ? `Iš aprašymų sukurta ${r.added} kortelių.`
+                  : 'Ženklų aprašymai jau yra kortelėse.',
+              );
+            }}
+          >
+            Aprašymus į korteles
+          </button>
+          <Link className="btn btn-primary" to="/korteles">
+            Kortelės
+          </Link>
+        </div>
       </div>
+
+      {cardMsg && <p className="muted" style={{ margin: '-0.5rem 0 1rem' }}>{cardMsg}</p>}
 
       <label className="search-field">
         <span className="sr-only">Ieškoti ženklo</span>
@@ -84,16 +105,24 @@ export function SignsPage() {
               <span className="eyebrow">{active.code}</span>
               <h2 style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>{active.name}</h2>
               <p style={{ color: 'var(--muted)' }}>{active.meaning}</p>
-              <button
-                className="btn btn-primary"
-                style={{ marginTop: '1rem' }}
-                disabled={progress.masteredSigns.includes(active.id)}
-                onClick={() => markSignMastered(active.id)}
-              >
-                {progress.masteredSigns.includes(active.id)
-                  ? 'Jau išmokote'
-                  : 'Pažymėti kaip išmoktą'}
-              </button>
+              <div className="quiz-actions" style={{ marginTop: '1rem' }}>
+                <button
+                  className="btn btn-primary"
+                  disabled={progress.masteredSigns.includes(active.id)}
+                  onClick={() => markSignMastered(active.id)}
+                >
+                  {progress.masteredSigns.includes(active.id)
+                    ? 'Jau išmokote'
+                    : 'Pažymėti kaip išmoktą'}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  disabled={hasSource(`signdesc-${active.id}`)}
+                  onClick={() => void addSignDescriptionCards([active])}
+                >
+                  {hasSource(`signdesc-${active.id}`) ? 'Jau kortelėse' : 'Aprašymą į korteles'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

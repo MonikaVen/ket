@@ -220,18 +220,24 @@ p {
 .form-card {
   display: grid;
   gap: 0.85rem;
-  max-width: 560px;
+  max-width: 640px;
   padding: 1.25rem;
   border-radius: var(--radius);
   background: var(--bg-elevated);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.form-card label {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.88rem;
-  color: var(--muted);
+.form-card .check-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text);
+}
+
+.form-card .check-row input {
+  width: auto;
+  padding: 0;
 }
 
 .form-card input,
@@ -597,14 +603,23 @@ p {
 }
 
 .flash-stage {
-  max-width: 480px;
+  max-width: 720px;
+  width: 100%;
   margin: 0 auto;
   perspective: 1000px;
 }
 
 .flash-card {
   position: relative;
+  display: block;
+  width: 100%;
   min-height: 320px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
   transform-style: preserve-3d;
   transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
   cursor: pointer;
@@ -636,11 +651,15 @@ p {
 }
 
 .flash-face h2 {
-  font-size: 1.4rem;
+  font-size: 1.15rem;
+  text-align: center;
+  margin: 0;
 }
 
 .flash-face p {
   color: var(--muted);
+  text-align: center;
+  max-width: 40ch;
 }
 
 .stat-row {

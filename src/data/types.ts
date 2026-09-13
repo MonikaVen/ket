@@ -42,7 +42,7 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-export type CardKind = 'sign' | 'rule' | 'concept';
+export type CardKind = 'sign' | 'rule' | 'concept' | 'question';
 
 export interface ConceptCard {
   id: string;
@@ -50,6 +50,8 @@ export interface ConceptCard {
   front: string;
   back: string;
   sourceId?: string;
+  /** `text` = study from the written description; default visual for signs. */
+  prompt?: 'visual' | 'text';
   ownerId?: string | null;
   createdAt: string;
 }
