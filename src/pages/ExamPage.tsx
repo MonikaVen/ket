@@ -7,6 +7,7 @@ import {
   pickExamQuestions,
 } from '../data/questions';
 import type { QuizQuestion } from '../data/types';
+import { AddQuestionCardsButton } from '../components/AddQuestionCards';
 import { useContent } from '../hooks/useContent';
 import { useProgress } from '../hooks/useProgress';
 
@@ -135,6 +136,11 @@ export function ExamPage() {
           </div>
         )}
         <div className="quiz-actions" style={{ justifyContent: 'center' }}>
+          <AddQuestionCardsButton
+            questions={items.filter((_, i) => answers[i] !== items[i].correctIndex)}
+            label="Neteisingus į korteles"
+          />
+          <AddQuestionCardsButton questions={items} label="Visus klausimus į korteles" />
           <button className="btn btn-primary" onClick={startExam}>
             Naujas egzaminas
           </button>
