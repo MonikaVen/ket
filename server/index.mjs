@@ -1,10 +1,10 @@
 import express from 'express';
 import path from 'node:path';
-import { createApiRouter } from './api.mjs';
+import { apiMiddleware } from './api.mjs';
 
 const port = Number(process.env.PORT || 8787);
 const app = express();
-app.use('/api', createApiRouter());
+app.use(apiMiddleware);
 
 const dist = path.resolve(process.cwd(), 'dist');
 app.use(express.static(dist));

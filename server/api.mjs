@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import express from 'express';
 import {
   getStore,
   hashPassword,
@@ -12,32 +11,48 @@ import {
 
 const TOKEN_DAYS = 30;
 
-function authUser(req) {
+function send(res, status, body) {
+  const payload = JSON.stringify(body);
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.end(payload);
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', (c) => chunks.push(c));
+    req.on('end', () => {
+      if (!chunks.length) {
+        resolve({});
+        return;
+      }
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      } catch {
+        reject(new Error('invalid-json'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+function pathnameOf(req) {
+  const raw = req.originalUrl || req.url || '/';
+  const path = raw.split('?')[0];
+  return path.startsWith('/api') ? path.slice(4) || '/' : path;
+}
+
+function bearer(req) {
   const header = req.headers.authorization || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+  return header.startsWith('Bearer ') ? header.slice(7) : '';
+}
+
+function currentUser(req) {
   const store = getStore();
-  const payload = verifyToken(token, store.secret);
+  const payload = verifyToken(bearer(req), store.secret);
   if (!payload?.uid) return null;
   return store.users.find((u) => u.id === payload.uid) ?? null;
-}
-
-function requireUser(req, res) {
-  const user = authUser(req);
-  if (!user) {
-    res.status(401).json({ error: 'Reikia prisijungti.' });
-    return null;
-  }
-  return user;
-}
-
-function requireAdmin(req, res) {
-  const user = requireUser(req, res);
-  if (!user) return null;
-  if (user.role !== 'admin') {
-    res.status(403).json({ error: 'Tik administratoriui.' });
-    return null;
-  }
-  return user;
 }
 
 function issueToken(user, secret) {
@@ -47,35 +62,47 @@ function issueToken(user, secret) {
   );
 }
 
-export function createApiRouter() {
-  const router = express.Router();
-  router.use(express.json({ limit: '1mb' }));
+async function handle(req, res) {
+  const path = pathnameOf(req);
+  const method = req.method || 'GET';
 
-  router.get('/health', (_req, res) => {
-    res.json({ ok: true });
-  });
+  if (method === 'GET' && path === '/health') {
+    send(res, 200, { ok: true });
+    return;
+  }
 
-  router.get('/content', (_req, res) => {
+  if (method === 'GET' && path === '/content') {
     const store = getStore();
-    res.json({
+    send(res, 200, {
       questions: store.adminQuestions,
       cards: store.adminCards,
     });
-  });
+    return;
+  }
 
-  router.post('/auth/register', (req, res) => {
-    const email = String(req.body?.email || '')
+  let body = {};
+  if (method !== 'GET' && method !== 'HEAD') {
+    try {
+      body = await readBody(req);
+    } catch {
+      send(res, 400, { error: 'Neteisingas JSON.' });
+      return;
+    }
+  }
+
+  if (method === 'POST' && path === '/auth/register') {
+    const email = String(body.email || '')
       .trim()
       .toLowerCase();
-    const password = String(req.body?.password || '');
-    const name = String(req.body?.name || '').trim() || email.split('@')[0];
+    const password = String(body.password || '');
+    const name = String(body.name || '').trim() || email.split('@')[0];
     if (!email.includes('@') || password.length < 6) {
-      res.status(400).json({ error: 'Nurodykite el. paštą ir slaptažodį (bent 6 simboliai).' });
+      send(res, 400, { error: 'Nurodykite el. paštą ir slaptažodį (bent 6 simboliai).' });
       return;
     }
     const store = getStore();
     if (store.users.some((u) => u.email === email)) {
-      res.status(409).json({ error: 'Toks el. paštas jau užregistruotas.' });
+      send(res, 409, { error: 'Toks el. paštas jau užregistruotas.' });
       return;
     }
     const { salt, hash } = hashPassword(password);
@@ -90,69 +117,89 @@ export function createApiRouter() {
     };
     updateStore((s) => {
       s.users.push(user);
-      s.progress[user.id] = req.body?.progress ?? null;
-      s.userCards[user.id] = Array.isArray(req.body?.cards) ? req.body.cards : [];
+      s.progress[user.id] = body.progress ?? null;
+      s.userCards[user.id] = Array.isArray(body.cards) ? body.cards : [];
     });
-    const token = issueToken(user, getStore().secret);
-    res.json({ token, user: publicUser(user) });
-  });
+    send(res, 200, { token: issueToken(user, getStore().secret), user: publicUser(user) });
+    return;
+  }
 
-  router.post('/auth/login', (req, res) => {
-    const email = String(req.body?.email || '')
+  if (method === 'POST' && path === '/auth/login') {
+    const email = String(body.email || '')
       .trim()
       .toLowerCase();
-    const password = String(req.body?.password || '');
+    const password = String(body.password || '');
     const store = getStore();
     const user = store.users.find((u) => u.email === email);
     if (!user || !verifyPassword(password, user.passwordSalt, user.passwordHash)) {
-      res.status(401).json({ error: 'Neteisingas el. paštas arba slaptažodis.' });
+      send(res, 401, { error: 'Neteisingas el. paštas arba slaptažodis.' });
       return;
     }
-    res.json({ token: issueToken(user, store.secret), user: publicUser(user) });
-  });
+    send(res, 200, { token: issueToken(user, store.secret), user: publicUser(user) });
+    return;
+  }
 
-  router.get('/auth/me', (req, res) => {
-    const user = requireUser(req, res);
-    if (!user) return;
-    res.json({ user: publicUser(user) });
-  });
+  if (method === 'GET' && path === '/auth/me') {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
+    send(res, 200, { user: publicUser(user) });
+    return;
+  }
 
-  router.get('/progress', (req, res) => {
-    const user = requireUser(req, res);
-    if (!user) return;
+  if (method === 'GET' && path === '/progress') {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
     const store = getStore();
-    res.json({
+    send(res, 200, {
       progress: store.progress[user.id] ?? null,
       cards: store.userCards[user.id] ?? [],
     });
-  });
+    return;
+  }
 
-  router.put('/progress', (req, res) => {
-    const user = requireUser(req, res);
-    if (!user) return;
+  if (method === 'PUT' && path === '/progress') {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
     updateStore((s) => {
-      s.progress[user.id] = req.body?.progress ?? s.progress[user.id] ?? null;
+      s.progress[user.id] = body.progress ?? s.progress[user.id] ?? null;
     });
-    res.json({ ok: true });
-  });
+    send(res, 200, { ok: true });
+    return;
+  }
 
-  router.get('/cards', (req, res) => {
-    const user = requireUser(req, res);
-    if (!user) return;
+  if (method === 'GET' && path === '/cards') {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
     const store = getStore();
-    res.json({
+    send(res, 200, {
       cards: [...(store.adminCards || []), ...(store.userCards[user.id] || [])],
     });
-  });
+    return;
+  }
 
-  router.post('/cards', (req, res) => {
-    const user = requireUser(req, res);
-    if (!user) return;
-    const front = String(req.body?.front || '').trim();
-    const back = String(req.body?.back || '').trim();
-    const kind = req.body?.kind === 'rule' || req.body?.kind === 'sign' ? req.body.kind : 'concept';
+  if (method === 'POST' && path === '/cards') {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
+    const front = String(body.front || '').trim();
+    const back = String(body.back || '').trim();
+    const kind = body.kind === 'rule' || body.kind === 'sign' ? body.kind : 'concept';
     if (!front || !back) {
-      res.status(400).json({ error: 'Įrašykite sąvoką ir paaiškinimą.' });
+      send(res, 400, { error: 'Įrašykite sąvoką ir paaiškinimą.' });
       return;
     }
     const card = {
@@ -160,29 +207,44 @@ export function createApiRouter() {
       kind,
       front,
       back,
-      sourceId: req.body?.sourceId ? String(req.body.sourceId) : undefined,
+      sourceId: body.sourceId ? String(body.sourceId) : undefined,
       ownerId: user.id,
       createdAt: new Date().toISOString(),
     };
     updateStore((s) => {
       s.userCards[user.id] = [...(s.userCards[user.id] || []), card];
     });
-    res.json({ card });
-  });
+    send(res, 200, { card });
+    return;
+  }
 
-  router.delete('/cards/:id', (req, res) => {
-    const user = requireUser(req, res);
-    if (!user) return;
+  const cardDelete = path.match(/^\/cards\/([^/]+)$/);
+  if (method === 'DELETE' && cardDelete) {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
+    const id = decodeURIComponent(cardDelete[1]);
     updateStore((s) => {
-      s.userCards[user.id] = (s.userCards[user.id] || []).filter((c) => c.id !== req.params.id);
+      s.userCards[user.id] = (s.userCards[user.id] || []).filter((c) => c.id !== id);
     });
-    res.json({ ok: true });
-  });
+    send(res, 200, { ok: true });
+    return;
+  }
 
-  router.get('/admin/users', (req, res) => {
-    if (!requireAdmin(req, res)) return;
+  if (method === 'GET' && path === '/admin/users') {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
+    if (user.role !== 'admin') {
+      send(res, 403, { error: 'Tik administratoriui.' });
+      return;
+    }
     const store = getStore();
-    res.json({
+    send(res, 200, {
       users: store.users.map((u) => ({
         ...publicUser(u),
         createdAt: u.createdAt,
@@ -190,13 +252,22 @@ export function createApiRouter() {
         hasProgress: Boolean(store.progress[u.id]),
       })),
     });
-  });
+    return;
+  }
 
-  router.post('/admin/questions', (req, res) => {
-    if (!requireAdmin(req, res)) return;
-    const q = req.body?.question;
+  if (method === 'POST' && path === '/admin/questions') {
+    const user = currentUser(req);
+    if (!user) {
+      send(res, 401, { error: 'Reikia prisijungti.' });
+      return;
+    }
+    if (user.role !== 'admin') {
+      send(res, 403, { error: 'Tik administratoriui.' });
+      return;
+    }
+    const q = body.question;
     if (!q?.question || !Array.isArray(q.options) || q.options.length < 2) {
-      res.status(400).json({ error: 'Klausimui reikia teksto ir bent dviejų atsakymų.' });
+      send(res, 400, { error: 'Klausimui reikia teksto ir bent dviejų atsakymų.' });
       return;
     }
     const item = {
@@ -211,23 +282,35 @@ export function createApiRouter() {
     updateStore((s) => {
       s.adminQuestions = [...s.adminQuestions.filter((x) => x.id !== item.id), item];
     });
-    res.json({ question: item });
-  });
+    send(res, 200, { question: item });
+    return;
+  }
 
-  router.delete('/admin/questions/:id', (req, res) => {
-    if (!requireAdmin(req, res)) return;
+  const qDelete = path.match(/^\/admin\/questions\/([^/]+)$/);
+  if (method === 'DELETE' && qDelete) {
+    const user = currentUser(req);
+    if (!user || user.role !== 'admin') {
+      send(res, user ? 403 : 401, { error: user ? 'Tik administratoriui.' : 'Reikia prisijungti.' });
+      return;
+    }
+    const id = decodeURIComponent(qDelete[1]);
     updateStore((s) => {
-      s.adminQuestions = s.adminQuestions.filter((q) => q.id !== req.params.id);
+      s.adminQuestions = s.adminQuestions.filter((q) => q.id !== id);
     });
-    res.json({ ok: true });
-  });
+    send(res, 200, { ok: true });
+    return;
+  }
 
-  router.post('/admin/cards', (req, res) => {
-    if (!requireAdmin(req, res)) return;
-    const front = String(req.body?.front || '').trim();
-    const back = String(req.body?.back || '').trim();
+  if (method === 'POST' && path === '/admin/cards') {
+    const user = currentUser(req);
+    if (!user || user.role !== 'admin') {
+      send(res, user ? 403 : 401, { error: user ? 'Tik administratoriui.' : 'Reikia prisijungti.' });
+      return;
+    }
+    const front = String(body.front || '').trim();
+    const back = String(body.back || '').trim();
     if (!front || !back) {
-      res.status(400).json({ error: 'Įrašykite sąvoką ir paaiškinimą.' });
+      send(res, 400, { error: 'Įrašykite sąvoką ir paaiškinimą.' });
       return;
     }
     const card = {
@@ -241,16 +324,37 @@ export function createApiRouter() {
     updateStore((s) => {
       s.adminCards.push(card);
     });
-    res.json({ card });
-  });
+    send(res, 200, { card });
+    return;
+  }
 
-  router.delete('/admin/cards/:id', (req, res) => {
-    if (!requireAdmin(req, res)) return;
+  const acDelete = path.match(/^\/admin\/cards\/([^/]+)$/);
+  if (method === 'DELETE' && acDelete) {
+    const user = currentUser(req);
+    if (!user || user.role !== 'admin') {
+      send(res, user ? 403 : 401, { error: user ? 'Tik administratoriui.' : 'Reikia prisijungti.' });
+      return;
+    }
+    const id = decodeURIComponent(acDelete[1]);
     updateStore((s) => {
-      s.adminCards = s.adminCards.filter((c) => c.id !== req.params.id);
+      s.adminCards = s.adminCards.filter((c) => c.id !== id);
     });
-    res.json({ ok: true });
-  });
+    send(res, 200, { ok: true });
+    return;
+  }
 
-  return router;
+  send(res, 404, { error: 'Nerasta.' });
+}
+
+export function apiMiddleware(req, res, next) {
+  const raw = req.originalUrl || req.url || '';
+  const path = raw.split('?')[0];
+  if (!path.startsWith('/api')) {
+    next();
+    return;
+  }
+  handle(req, res).catch((err) => {
+    console.error(err);
+    if (!res.headersSent) send(res, 500, { error: 'Serverio klaida.' });
+  });
 }
