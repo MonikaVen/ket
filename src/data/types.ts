@@ -11,6 +11,7 @@ export type ChapterId =
   | 'sankryzos'
   | 'lenkimas'
   | 'sustojimas'
+  | 'pervazos'
   | 'zenklai'
   | 'sauga';
 

@@ -13,7 +13,12 @@ export function StudyPage() {
           <h1>Mokytis pagal skyrius</h1>
           <p>Pasirinkite skyrių, skaitykite taisykles ir pažymėkite, ką jau išmokote.</p>
         </div>
-        <a className="btn btn-ghost" href="/ket-2026.pdf" target="_blank" rel="noreferrer">
+        <a
+          className="btn btn-ghost"
+          href="https://www.ketonline.lt/wp-content/uploads/2026/02/Keliu-eismo-taisykles-KET-su-paveiksliukais-2026-01-01.pdf"
+          target="_blank"
+          rel="noreferrer"
+        >
           Atidaryti KET PDF
         </a>
       </div>

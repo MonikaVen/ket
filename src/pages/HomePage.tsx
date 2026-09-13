@@ -31,6 +31,18 @@ export function HomePage() {
         </div>
       </section>
 
+      <section className="update-banner">
+        <span className="eyebrow">Nuo 2026-01-01</span>
+        <h2>Šalmas privalomas visiems paspirtukininkams</h2>
+        <p>
+          Elektrine mikrojudumo priemone važiuojant šalmas turi būti užsidėtas ir užsisegtas visiems,
+          visur. Nuomojant — šalmą privalo duoti nuomotojas. Dviračiui taisyklė nesikeitė: iki 18 m.
+        </p>
+        <Link className="btn btn-primary" to="/mokytis/mikromobilumas">
+          Skyrius VIII¹
+        </Link>
+      </section>
+
       <section style={{ marginTop: '0.5rem', paddingBottom: '1rem' }}>
         <div className="mode-grid">
           <Link className="mode-link" to="/mokytis" style={{ animationDelay: '0.05s' }}>

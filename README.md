@@ -11,7 +11,9 @@ Interaktyvi mokymosi programa Lietuvos kelių eismo taisyklėms (redakcija nuo *
 - **Egzaminas** — 30 klausimų / 30 min. / 24 teisingi (Regitros formatas)
 - **Pažanga** — lokalus progressas (localStorage)
 
-Oficialus PDF: [`public/ket-2026.pdf`](./public/ket-2026.pdf) (šaltinis: ketonline.lt).
+Oficialus KET tekstas: [ketonline.lt PDF](https://www.ketonline.lt/wp-content/uploads/2026/02/Keliu-eismo-taisykles-KET-su-paveiksliukais-2026-01-01.pdf) (redakcija nuo **2026-01-01**).
+
+Svarbiausias 2026 pakeitimas: **visiems** elektrinių mikrojudumo priemonių vairuotojams privalomas užsegtas šalmas; nuomojant šalmą privalo suteikti nuomotojas.
 
 ## Paleidimas
 

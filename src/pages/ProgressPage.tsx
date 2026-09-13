@@ -19,7 +19,12 @@ export function ProgressPage() {
           <h1>Jūsų pažanga</h1>
           <p>Duomenys saugomi šiame įrenginyje (localStorage).</p>
         </div>
-        <button className="btn btn-danger" onClick={resetProgress}>
+        <button
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Ištrinti visą pažangą šiame įrenginyje?')) resetProgress();
+          }}
+        >
           Nunulinti
         </button>
       </div>

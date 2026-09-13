@@ -7,13 +7,22 @@ import { useProgress } from '../hooks/useProgress';
 
 export function SignsPage() {
   const [cat, setCat] = useState<SignCategory | 'all'>('all');
+  const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
   const { progress, markSignMastered } = useProgress();
 
-  const filtered = useMemo(
-    () => (cat === 'all' ? signs : signs.filter((s) => s.category === cat)),
-    [cat],
-  );
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return signs.filter((s) => {
+      if (cat !== 'all' && s.category !== cat) return false;
+      if (!q) return true;
+      return (
+        s.name.toLowerCase().includes(q) ||
+        s.code.includes(q) ||
+        s.meaning.toLowerCase().includes(q)
+      );
+    });
+  }, [cat, query]);
   const active = signs.find((s) => s.id === activeId) ?? null;
 
   return (
@@ -22,12 +31,24 @@ export function SignsPage() {
         <div>
           <span className="eyebrow">1 priedas</span>
           <h1>Kelio ženklai</h1>
-          <p>Peržiūrėkite ženklus pagal grupes ir pažymėkite išmoktus. Kortelėmis kartokite atmintinai.</p>
+          <p>
+            Oficialūs KET 2026 numeriai ir grupės. Pažymėkite išmoktus ir kartokite kortelėmis.
+          </p>
         </div>
         <Link className="btn btn-primary" to="/korteles">
           Kortelės
         </Link>
       </div>
+
+      <label className="search-field">
+        <span className="sr-only">Ieškoti ženklo</span>
+        <input
+          type="search"
+          placeholder="Ieškoti pagal pavadinimą ar numerį (pvz. 203)"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
 
       <div className="filters">
         <button
@@ -67,6 +88,7 @@ export function SignsPage() {
           );
         })}
       </div>
+      {filtered.length === 0 && <p className="empty">Nerasta ženklų pagal paiešką.</p>}
 
       {active && (
         <div className="detail-panel">

@@ -4,6 +4,7 @@ const links = [
   { to: '/', label: 'Pradžia', end: true },
   { to: '/mokytis', label: 'Mokytis' },
   { to: '/zenklai', label: 'Ženklai' },
+  { to: '/korteles', label: 'Kortelės' },
   { to: '/testas', label: 'Testas' },
   { to: '/egzaminas', label: 'Egzaminas' },
   { to: '/pazanga', label: 'Pažanga' },
