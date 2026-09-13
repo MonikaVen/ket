@@ -6,7 +6,7 @@ Interaktyvi mokymosi programa Lietuvos kelių eismo taisyklėms (redakcija nuo *
 
 - **Skyriai** — KET santraukos su patarimais egzaminui
 - **Ženklai** — katalogas su oficialiais 2026 1 priedo pavyzdžiais (nukirpti iš KET PDF)
-- **Kortelės** — ženklai, taisyklės ir savo sąvokos („Pridėti sąvoką“)
+- **Kortelės** — ženklai, taisyklės, sąvokos; **Sukurti iš KET** automatiškai iš klausimų ir ženklų aprašymų
 - **Testai** — teminiai klausimynai su paaiškinimais; kiekviena taisyklė turi klausimą
 - **Egzaminas** — 30 klausimų / 30 min. / 24 teisingi (Regitros formatas)
 - **Pažanga** — be paskyros lieka naršyklėje; registracija išsaugo istoriją serveryje

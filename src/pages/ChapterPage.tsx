@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { getChapter } from '../data/chapters';
-import { getQuestionsForRule } from '../data/questions';
+import { getQuestionsByChapter, getQuestionsForRule } from '../data/questions';
+import { AddQuestionCardsButton } from '../components/AddQuestionCards';
 import { useCards } from '../hooks/useCards';
 import { useContent } from '../hooks/useContent';
 import { useProgress } from '../hooks/useProgress';
@@ -31,13 +32,17 @@ export function ChapterPage() {
           <h1>{chapter.title}</h1>
           <p>{chapter.summary}</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <Link className="btn btn-ghost" to="/mokytis">
             Visi skyriai
           </Link>
           <Link className="btn btn-primary" to={`/testas?tema=${chapter.id}`}>
             Testuoti temą
           </Link>
+          <AddQuestionCardsButton
+            questions={getQuestionsByChapter(chapter.id, questions)}
+            label="Skyriaus klausimus į korteles"
+          />
         </div>
       </div>
 

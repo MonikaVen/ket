@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { chapters } from '../data/chapters';
 import { getQuestionsByChapter, shuffle, withShuffledOptions } from '../data/questions';
 import type { ChapterId, QuizQuestion } from '../data/types';
+import { AddQuestionCardsButton } from '../components/AddQuestionCards';
 import { useContent } from '../hooks/useContent';
 import { useProgress } from '../hooks/useProgress';
 
@@ -107,6 +108,11 @@ export function QuizEngine({
           })}
         </div>
         <div className="quiz-actions" style={{ justifyContent: 'center' }}>
+          <AddQuestionCardsButton
+            questions={items.filter((_, i) => answers[i] !== items[i].correctIndex)}
+            label="Neteisingus į korteles"
+          />
+          <AddQuestionCardsButton questions={items} label="Visus klausimus į korteles" />
           <button
             className="btn btn-primary"
             onClick={() => {
