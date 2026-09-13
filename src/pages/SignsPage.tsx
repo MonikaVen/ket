@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SignVisual } from '../components/SignVisual';
 import { signCategories, signs } from '../data/signs';
@@ -7,14 +7,29 @@ import { useProgress } from '../hooks/useProgress';
 
 export function SignsPage() {
   const [cat, setCat] = useState<SignCategory | 'all'>('all');
+  const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
   const { progress, markSignMastered } = useProgress();
+  const detailRef = useRef<HTMLDivElement>(null);
 
-  const filtered = useMemo(
-    () => (cat === 'all' ? signs : signs.filter((s) => s.category === cat)),
-    [cat],
-  );
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return signs.filter((s) => {
+      if (cat !== 'all' && s.category !== cat) return false;
+      if (!q) return true;
+      return (
+        s.name.toLowerCase().includes(q) ||
+        s.code.includes(q) ||
+        s.meaning.toLowerCase().includes(q)
+      );
+    });
+  }, [cat, query]);
   const active = signs.find((s) => s.id === activeId) ?? null;
+
+  useEffect(() => {
+    if (!activeId) return;
+    detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [activeId]);
 
   return (
     <div>
@@ -22,12 +37,25 @@ export function SignsPage() {
         <div>
           <span className="eyebrow">1 priedas</span>
           <h1>Kelio ženklai</h1>
-          <p>Peržiūrėkite ženklus pagal grupes ir pažymėkite išmoktus. Kortelėmis kartokite atmintinai.</p>
+          <p>
+            Oficialūs KET 2026 numeriai; pavyzdžiai nukirpti iš 1 priedo. Pažymėkite išmoktus ir
+            kartokite kortelėmis.
+          </p>
         </div>
         <Link className="btn btn-primary" to="/korteles">
           Kortelės
         </Link>
       </div>
+
+      <label className="search-field">
+        <span className="sr-only">Ieškoti ženklo</span>
+        <input
+          type="search"
+          placeholder="Ieškoti pagal pavadinimą ar numerį (pvz. 203)"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
 
       <div className="filters">
         <button
@@ -48,28 +76,8 @@ export function SignsPage() {
         ))}
       </div>
 
-      <div className="signs-grid">
-        {filtered.map((sign, i) => {
-          const mastered = progress.masteredSigns.includes(sign.id);
-          return (
-            <button
-              key={sign.id}
-              className={`sign-card${activeId === sign.id ? ' active' : ''}${
-                mastered ? ' mastered' : ''
-              }`}
-              style={{ animationDelay: `${(i % 12) * 0.03}s` }}
-              onClick={() => setActiveId(sign.id)}
-            >
-              <SignVisual sign={sign} className="sign-visual" />
-              <h3>{sign.name}</h3>
-              <div className="code">{sign.code}</div>
-            </button>
-          );
-        })}
-      </div>
-
       {active && (
-        <div className="detail-panel">
+        <div className="detail-panel" ref={detailRef}>
           <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <SignVisual sign={active} className="sign-visual" />
             <div style={{ flex: 1, minWidth: 220 }}>
@@ -90,6 +98,27 @@ export function SignsPage() {
           </div>
         </div>
       )}
+
+      <div className="signs-grid">
+        {filtered.map((sign, i) => {
+          const mastered = progress.masteredSigns.includes(sign.id);
+          return (
+            <button
+              key={sign.id}
+              className={`sign-card${activeId === sign.id ? ' active' : ''}${
+                mastered ? ' mastered' : ''
+              }`}
+              style={{ animationDelay: `${(i % 12) * 0.03}s` }}
+              onClick={() => setActiveId(sign.id)}
+            >
+              <SignVisual sign={sign} className="sign-visual" />
+              <h3>{sign.name}</h3>
+              <div className="code">{sign.code}</div>
+            </button>
+          );
+        })}
+      </div>
+      {filtered.length === 0 && <p className="empty">Nerasta ženklų pagal paiešką.</p>}
     </div>
   );
 }

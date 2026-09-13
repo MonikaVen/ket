@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { chapters } from '../data/chapters';
-import { getQuestionsByChapter, questions, shuffle } from '../data/questions';
+import { getQuestionsByChapter, shuffle, withShuffledOptions } from '../data/questions';
 import type { ChapterId, QuizQuestion } from '../data/types';
+import { useContent } from '../hooks/useContent';
 import { useProgress } from '../hooks/useProgress';
 
 export function QuizEngine({
@@ -30,8 +31,7 @@ export function QuizEngine({
     if (a === null) return n;
     return n + (a === items[i].correctIndex ? 1 : 0);
   }, 0);
-  const answeredCount = answers.filter((a) => a !== null).length;
-  const pct = Math.round((answeredCount / items.length) * 100);
+  const pct = Math.round(((index + (selected !== null ? 1 : 0)) / items.length) * 100);
 
   const choose = (i: number) => {
     if (revealed || answers[index] !== null) return;
@@ -40,27 +40,29 @@ export function QuizEngine({
       next[index] = i;
       return next;
     });
-    if (showExplanations) setRevealed(true);
-    else {
-      // exam mode: auto-advance after short delay feel via immediate next enable
-      setRevealed(true);
-    }
+    setRevealed(true);
+  };
+
+  const goTo = (nextIndex: number) => {
+    setIndex(nextIndex);
+    setRevealed(answers[nextIndex] !== null && showExplanations);
+  };
+
+  const finish = () => {
+    const finalScore = answers.reduce<number>(
+      (n, a, i) => n + (a === items[i].correctIndex ? 1 : 0),
+      0,
+    );
+    recordQuiz(finalScore, items.length, mode, chapterId);
+    setDone(true);
   };
 
   const next = () => {
     if (index + 1 >= items.length) {
-      const finalAnswers = [...answers];
-      if (finalAnswers[index] === null && selected !== null) finalAnswers[index] = selected;
-      const finalScore = finalAnswers.reduce<number>(
-        (n, a, i) => n + (a === items[i].correctIndex ? 1 : 0),
-        0,
-      );
-      recordQuiz(finalScore, items.length, mode, chapterId);
-      setDone(true);
+      finish();
       return;
     }
-    setIndex((i) => i + 1);
-    setRevealed(answers[index + 1] !== null);
+    goTo(index + 1);
   };
 
   if (!items.length) {
@@ -87,6 +89,23 @@ export function QuizEngine({
             ? 'Pasiekėte 80 %+ — Regitros egzamino ribą.'
             : 'Reikia bent 80 %. Peržiūrėkite temas ir bandykite dar kartą.'}
         </p>
+        <div className="review-list">
+          {items.map((item, i) => {
+            const ok = answers[i] === item.correctIndex;
+            return (
+              <details key={item.id} className={`review-item${ok ? ' ok' : ' bad'}`}>
+                <summary>
+                  {ok ? 'Teisingai' : 'Neteisingai'} · {item.question}
+                </summary>
+                <p>
+                  Jūsų atsakymas: {answers[i] == null ? '—' : item.options[answers[i]]}
+                </p>
+                <p>Teisingas: {item.options[item.correctIndex]}</p>
+                <p className="muted">{item.explanation}</p>
+              </details>
+            );
+          })}
+        </div>
         <div className="quiz-actions" style={{ justifyContent: 'center' }}>
           <button
             className="btn btn-primary"
@@ -134,7 +153,7 @@ export function QuizEngine({
           } else if (selected === i) cls += ' selected';
           return (
             <button
-              key={opt}
+              key={`${q.id}-${i}`}
               className={cls}
               disabled={selected !== null}
               onClick={() => choose(i)}
@@ -151,6 +170,9 @@ export function QuizEngine({
         </div>
       )}
       <div className="quiz-actions">
+        <button className="btn btn-ghost" disabled={index === 0} onClick={() => goTo(index - 1)}>
+          Atgal
+        </button>
         <button className="btn btn-primary" disabled={selected === null} onClick={next}>
           {index + 1 >= items.length ? 'Rezultatas' : 'Kitas'}
         </button>
@@ -163,11 +185,14 @@ export function QuizPage() {
   const [params] = useSearchParams();
   const tema = params.get('tema') as ChapterId | null;
   const [picked, setPicked] = useState<ChapterId | 'all'>(tema ?? 'all');
+  const { questions } = useContent();
 
   const items = useMemo(() => {
-    const pool = picked === 'all' ? questions : getQuestionsByChapter(picked);
-    return shuffle(pool).slice(0, Math.min(10, pool.length));
-  }, [picked]);
+    const pool = picked === 'all' ? questions : getQuestionsByChapter(picked, questions);
+    return shuffle(pool)
+      .slice(0, Math.min(10, pool.length))
+      .map(withShuffledOptions);
+  }, [picked, questions]);
 
   const key = `${picked}-${items[0]?.id ?? 'empty'}-${items.length}`;
 

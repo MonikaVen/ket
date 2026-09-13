@@ -11,6 +11,7 @@ export type ChapterId =
   | 'sankryzos'
   | 'lenkimas'
   | 'sustojimas'
+  | 'pervazos'
   | 'zenklai'
   | 'sauga';
 
@@ -34,10 +35,30 @@ export interface Chapter {
 export interface QuizQuestion {
   id: string;
   chapterId: ChapterId;
+  ruleId?: string;
   question: string;
   options: string[];
   correctIndex: number;
   explanation: string;
+}
+
+export type CardKind = 'sign' | 'rule' | 'concept';
+
+export interface ConceptCard {
+  id: string;
+  kind: CardKind;
+  front: string;
+  back: string;
+  sourceId?: string;
+  ownerId?: string | null;
+  createdAt: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'user' | 'admin';
 }
 
 export type SignCategory =

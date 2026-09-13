@@ -13,7 +13,7 @@ export function HomePage() {
           <h1>Išmok kelių eismo taisykles interaktyviai</h1>
           <p className="lead">
             Skyriai, ženklai, kortelės ir Regitros stiliaus egzaminas — pagal aktualią 2026-01-01
-            redakciją.
+            redakciją. Turinys atviras be paskyros; registracija išsaugo mokymosi istoriją.
           </p>
           <div className="hero-cta">
             <Link className="btn btn-primary" to="/mokytis">
@@ -29,6 +29,18 @@ export function HomePage() {
             </p>
           )}
         </div>
+      </section>
+
+      <section className="update-banner">
+        <span className="eyebrow">Nuo 2026-01-01</span>
+        <h2>Šalmas privalomas visiems paspirtukininkams</h2>
+        <p>
+          Elektrine mikrojudumo priemone važiuojant šalmas turi būti užsidėtas ir užsisegtas visiems,
+          visur. Nuomojant — šalmą privalo duoti nuomotojas. Dviračiui taisyklė nesikeitė: iki 18 m.
+        </p>
+        <Link className="btn btn-primary" to="/mokytis/mikromobilumas">
+          Skyrius VIII¹
+        </Link>
       </section>
 
       <section style={{ marginTop: '0.5rem', paddingBottom: '1rem' }}>

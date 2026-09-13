@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { chapters } from '../data/chapters';
 import { signs } from '../data/signs';
+import { useAuth } from '../hooks/useAuth';
 import { useProgress } from '../hooks/useProgress';
 
 export function ProgressPage() {
   const { progress, studiedPct, totalRules, resetProgress } = useProgress();
+  const { user } = useAuth();
   const examAttempts = progress.quizHistory.filter((h) => h.mode === 'exam');
   const bestExam = examAttempts.reduce(
     (best, h) => Math.max(best, Math.round((h.score / h.total) * 100)),
@@ -17,11 +19,27 @@ export function ProgressPage() {
         <div>
           <span className="eyebrow">Statistika</span>
           <h1>Jūsų pažanga</h1>
-          <p>Duomenys saugomi šiame įrenginyje (localStorage).</p>
+          <p>
+            {user
+              ? 'Pažanga saugoma jūsų paskyroje ir šiame įrenginyje.'
+              : 'Be paskyros duomenys lieka šiame įrenginyje. Registracija išsaugo istoriją serveryje.'}
+          </p>
         </div>
-        <button className="btn btn-danger" onClick={resetProgress}>
-          Nunulinti
-        </button>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          {!user && (
+            <Link className="btn btn-primary" to="/paskyra">
+              Registruotis
+            </Link>
+          )}
+          <button
+            className="btn btn-danger"
+            onClick={() => {
+              if (window.confirm('Ištrinti visą pažangą šiame įrenginyje?')) resetProgress();
+            }}
+          >
+            Nunulinti
+          </button>
+        </div>
       </div>
 
       <div className="stat-row">

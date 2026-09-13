@@ -1,6 +1,7 @@
+import { chapters } from './chapters';
 import type { QuizQuestion } from './types';
 
-export const questions: QuizQuestion[] = [
+const seedQuestions: QuizQuestion[] = [
   {
     id: 'q1',
     chapterId: 'bendrosios',
@@ -181,15 +182,15 @@ export const questions: QuizQuestion[] = [
   {
     id: 'q15',
     chapterId: 'mikromobilumas',
-    question: 'Kur paprastai važiuojama elektriniu paspirtuku?',
+    question: 'Kur pirmiausia važiuojama elektrine mikrojudumo priemone?',
     options: [
-      'Šaligatviu greta pėsčiųjų',
-      'Dviračių infrastruktūra',
+      'Visada šaligatviu greta pėsčiųjų',
+      'Dviračių takais, pėsčiųjų ir dviračių takais arba dviračių juostomis',
       'Automagistralėje',
       'Priešpriešine juosta',
     ],
     correctIndex: 1,
-    explanation: 'Elektrinės mikrojudumo priemonės naudoja dviračių infrastruktūrą.',
+    explanation: 'Pirmiausia — dviračių infrastruktūra; šaligatvis leidžiamas tik kai jos (ir tinkamo kelkraščio) nėra.',
   },
   {
     id: 'q16',
@@ -566,14 +567,264 @@ export const questions: QuizQuestion[] = [
     correctIndex: 1,
     explanation: 'Prieš pradėdamas važiuoti vairuotojas privalo įsitikinti TP tvarkingumu.',
   },
+  {
+    id: 'q46',
+    chapterId: 'mikromobilumas',
+    question: 'Kam nuo 2026-01-01 privalomas šalmas važiuojant elektriniu paspirtuku?',
+    options: [
+      'Tik jaunesniems nei 18 metų',
+      'Tik važiuojant važiuojamąja dalimi',
+      'Visiems elektrinių mikrojudumo priemonių vairuotojams, visur',
+      'Šalmas visada tik rekomenduojamas',
+    ],
+    correctIndex: 2,
+    explanation: 'KET 66²: visi vairuotojai važiuodami privalo būti užsidėję ir užsisegę šalmą — be amžiaus ar vietos išimčių.',
+  },
+  {
+    id: 'q47',
+    chapterId: 'mikromobilumas',
+    question: 'Kas privalo suteikti šalmą nuomojamam elektriniam paspirtukui?',
+    options: [
+      'Savivaldybė',
+      'Nuomotojas',
+      'Regitra',
+      'Niekas — šalmo nuomai nereikia',
+    ],
+    correctIndex: 1,
+    explanation: 'Jeigu elektrinė mikrojudumo priemonė nuomojama, šalmą privalo suteikti nuomotojas.',
+  },
+  {
+    id: 'q48',
+    chapterId: 'mikromobilumas',
+    question: 'Koks didžiausias greitis elektrine mikrojudumo priemone?',
+    options: ['10 km/h', '20 km/h', '25 km/h', '50 km/h'],
+    correctIndex: 1,
+    explanation: 'KET 66⁹.13: ne daugiau kaip 20 km/h; pro pėsčiąjį šaligatviu / taku / kelkraščiu — 7 km/h.',
+  },
+  {
+    id: 'q49',
+    chapterId: 'mikromobilumas',
+    question: 'Ar elektriniu paspirtuku leidžiama kirsti važiuojamąją dalį pėsčiųjų perėja važiuojant?',
+    options: [
+      'Taip, jei nėra automobilių',
+      'Taip, iki 7 km/h',
+      'Ne — pėsčiųjų perėjomis kirsti važiuojant draudžiama',
+      'Tik naktį',
+    ],
+    correctIndex: 2,
+    explanation: 'KET 66⁹.5: draudžiama kirsti važiuojamąją dalį važiuojant pėsčiųjų perėjomis.',
+  },
+  {
+    id: 'q50',
+    chapterId: 'dviraciai',
+    question: 'Ar suaugusiam dviratininkui nuo 2026 m. privalomas šalmas?',
+    options: [
+      'Taip, visiems dviratininkams',
+      'Ne — dviračiui šalmas privalomas tik jaunesniems nei 18 m.',
+      'Taip, tik mieste',
+      'Taip, tik dviračių take',
+    ],
+    correctIndex: 1,
+    explanation: '2026-01-01 pakeitimas palietė elektrines mikrojudumo priemones, ne paprastus dviračius. Dviračiui šalmas privalomas iki 18 metų.',
+  },
+  {
+    id: 'q51',
+    chapterId: 'pervazos',
+    question: 'Ar leidžiama įvažiuoti į geležinkelio pervažą, kai užtvaras pradeda leistis?',
+    options: [
+      'Taip, jei spėsite',
+      'Taip, jei šviesoforas dar geltonas',
+      'Ne — draudžiama, kai užtvaras nuleistas arba pradeda leistis',
+      'Tik pėstiesiems',
+    ],
+    correctIndex: 2,
+    explanation: 'KET 173.3: draudžiama įvažiuoti ar įeiti, kai užtvaras nuleistas arba pradeda leistis, taip pat jį pakelti ar apvažiuoti.',
+  },
+  {
+    id: 'q52',
+    chapterId: 'pervazos',
+    question: 'Kur sustoti, jei pervažoje nėra „Stop“ linijos, ženklo ir šviesoforo, o važiuoti draudžiama?',
+    options: [
+      'Ant pirmojo bėgio',
+      'Ne arčiau kaip 10 m nuo pirmojo bėgio',
+      'Bet kur kelkraštyje',
+      '5 m už pervažos',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 170: jei nėra linijos, ženklo, šviesoforo ar užtvaro — ne arčiau kaip 10 m nuo pirmojo bėgio.',
+  },
+  {
+    id: 'q53',
+    chapterId: 'zenklai',
+    question: 'Koks numeris ir forma yra ženklui „Duoti kelią“?',
+    options: [
+      '201, geltonas rombas',
+      '203, apverstas trikampis su raudonu kraštu',
+      '204, raudonas aštuonkampis',
+      '329, apskritimas su skaičiumi',
+    ],
+    correctIndex: 1,
+    explanation: 'Pagal KET 1 priedą: 203 — „Duoti kelią“ (apverstas trikampis). 201 — pagrindinis kelias, 204 — STOP.',
+  },
+  {
+    id: 'q54',
+    chapterId: 'mikromobilumas',
+    question: 'Nuo kokio amžiaus (be papildomo kurso) leidžiama važiuoti elektriniu paspirtuku dviračių taku?',
+    options: ['10 metų', '12 metų', '14 metų', '16 metų'],
+    correctIndex: 3,
+    explanation: 'KET 66¹: ne jaunesniems kaip 16 metų. Nuo 14 metų — tik baigus SMSM kursą ir turint mokyklos pažymėjimą.',
+  },
+  {
+    id: 'q55',
+    chapterId: 'zenklai',
+    question: 'Koks ženklas Nr. 101?',
+    options: [
+      'Pavojingas kelio ruožas',
+      'Pervaža su užtvaru',
+      'Vaikai',
+      'Pėsčiųjų perėja',
+    ],
+    correctIndex: 1,
+    explanation: 'Įspėjamasis 101 — geležinkelio pervaža su pakeliamuoju užtvaru. „Kiti pavojai“ — 137.',
+  },
+  {
+    id: 'q56',
+    chapterId: 'bendrosios',
+    question: 'Ar kiti eismo teisės aktai gali prieštarauti KET?',
+    options: [
+      'Taip, jei juos priėmė savivaldybė',
+      'Ne — įgyvendinamieji aktai negali prieštarauti Taisyklėms',
+      'Taip, jei tai policijos nurodymas',
+      'Tik žiemą',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 2 p.: kiti saugaus eismo įgyvendinamieji teisės aktai negali prieštarauti Taisyklėms.',
+  },
+  {
+    id: 'q57',
+    chapterId: 'savokos',
+    question: 'Kas yra dviračių gatvė?',
+    options: [
+      'Bet kuris dviračių takas',
+      'Kelias, pažymėtas ženklu „Dviračių gatvė“ (pabaiga — atitinkamu pabaigos ženklu)',
+      'Tik šaligatvis su dviračio simboliu',
+      'Automagistralės kraštinė juosta',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 3.21: dviračių gatvė prasideda ir baigiasi atitinkamais kelio ženklais.',
+  },
+  {
+    id: 'q58',
+    chapterId: 'dalyviai',
+    question: 'Ko privalo mokėti ir laikytis eismo dalyviai?',
+    options: [
+      'Tik kelio ženklų, KET nebūtinos',
+      'Taisyklių, elgtis pagarbiai ir atsargiai, paklusti teisėtiems pareigūnų reikalavimams',
+      'Tik automagistralėse',
+      'Tik jei turi vairuotojo pažymėjimą',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 4–7: eismo dalyviai privalo mokėti ir laikytis Taisyklių, elgtis atsargiai ir paklusti teisėtiems reikalavimams.',
+  },
+  {
+    id: 'q59',
+    chapterId: 'pestieji',
+    question: 'Ką vairuotojas privalo daryti pėsčiųjų perėjoje?',
+    options: [
+      'Signalizuoti ir važiuoti toliau',
+      'Duoti kelią pėstiesiems ir būti ypač atsargus prie mokyklų, stotelių, kai matomi vaikai',
+      'Sustoti tik jei pėstysis jau viduryje',
+      'Lenkti kitą automobilį perėjoje',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 27–35: vairuotojas privalo duoti kelią pėstiesiems perėjose ir būti ypač atsargus ten, kur būna vaikų ar asmenų su negalia.',
+  },
 ];
+
+const RULE_ID: Record<string, string> = {
+  q1: 'b1',
+  q56: 'b2',
+  q41: 's1',
+  q2: 's2',
+  q3: 's3',
+  q4: 's4',
+  q31: 's5',
+  q57: 's6',
+  q5: 'd1',
+  q6: 'd1',
+  q40: 'd1',
+  q7: 'd2',
+  q30: 'd2',
+  q58: 'd3',
+  q10: 'v1',
+  q32: 'v1',
+  q8: 'v2',
+  q9: 'v3',
+  q45: 'v4',
+  q59: 'p1',
+  q11: 'p2',
+  q12: 'p2',
+  q13: 'dv1',
+  q14: 'dv2',
+  q44: 'dv2',
+  q50: 'dv2',
+  q54: 'm1',
+  q46: 'm2',
+  q47: 'm2',
+  q15: 'm3',
+  q38: 'm4',
+  q48: 'm4',
+  q49: 'm4',
+  q16: 'sg1',
+  q17: 'sg2',
+  q33: 'sg2',
+  q18: 'g1',
+  q19: 'g1',
+  q28: 'g1',
+  q37: 'g2',
+  q20: 'sk1',
+  q21: 'sk1',
+  q43: 'sk1',
+  q29: 'sk2',
+  q22: 'l1',
+  q34: 'l1',
+  q23: 'st1',
+  q35: 'st1',
+  q52: 'pv1',
+  q51: 'pv2',
+  q24: 'z1',
+  q25: 'z1',
+  q26: 'z1',
+  q36: 'z1',
+  q42: 'z1',
+  q53: 'z1',
+  q55: 'z1',
+  q27: 'sa1',
+  q39: 'sa1',
+};
+
+export const questions: QuizQuestion[] = seedQuestions.map((q) => ({
+  ...q,
+  ruleId: RULE_ID[q.id] ?? q.ruleId,
+}));
+
+export function getQuestionsForRule(ruleId: string, pool: QuizQuestion[] = questions): QuizQuestion[] {
+  return pool.filter((q) => q.ruleId === ruleId);
+}
+
+export function uncoveredRuleIds(pool: QuizQuestion[] = questions): string[] {
+  return chapters.flatMap((ch) => ch.rules.filter((r) => getQuestionsForRule(r.id, pool).length === 0).map((r) => r.id));
+}
 
 export const EXAM_QUESTION_COUNT = 30;
 export const EXAM_PASS_SCORE = 24;
 export const EXAM_MINUTES = 30;
 
-export function getQuestionsByChapter(chapterId: string): QuizQuestion[] {
-  return questions.filter((q) => q.chapterId === chapterId);
+export function getQuestionsByChapter(
+  chapterId: string,
+  pool: QuizQuestion[] = questions,
+): QuizQuestion[] {
+  return pool.filter((q) => q.chapterId === chapterId);
 }
 
 export function shuffle<T>(arr: T[]): T[] {
@@ -585,6 +836,18 @@ export function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export function pickExamQuestions(): QuizQuestion[] {
-  return shuffle(questions).slice(0, Math.min(EXAM_QUESTION_COUNT, questions.length));
+export function withShuffledOptions(q: QuizQuestion): QuizQuestion {
+  const indexed = q.options.map((text, i) => ({ text, i }));
+  const shuffled = shuffle(indexed);
+  return {
+    ...q,
+    options: shuffled.map((x) => x.text),
+    correctIndex: shuffled.findIndex((x) => x.i === q.correctIndex),
+  };
+}
+
+export function pickExamQuestions(pool: QuizQuestion[] = questions): QuizQuestion[] {
+  return shuffle(pool)
+    .slice(0, Math.min(EXAM_QUESTION_COUNT, pool.length))
+    .map(withShuffledOptions);
 }
