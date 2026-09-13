@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { chapters } from '../data/chapters';
-import { getQuestionsByChapter, questions, shuffle, withShuffledOptions } from '../data/questions';
+import { getQuestionsByChapter, shuffle, withShuffledOptions } from '../data/questions';
 import type { ChapterId, QuizQuestion } from '../data/types';
+import { useContent } from '../hooks/useContent';
 import { useProgress } from '../hooks/useProgress';
 
 export function QuizEngine({
@@ -184,13 +185,14 @@ export function QuizPage() {
   const [params] = useSearchParams();
   const tema = params.get('tema') as ChapterId | null;
   const [picked, setPicked] = useState<ChapterId | 'all'>(tema ?? 'all');
+  const { questions } = useContent();
 
   const items = useMemo(() => {
-    const pool = picked === 'all' ? questions : getQuestionsByChapter(picked);
+    const pool = picked === 'all' ? questions : getQuestionsByChapter(picked, questions);
     return shuffle(pool)
       .slice(0, Math.min(10, pool.length))
       .map(withShuffledOptions);
-  }, [picked]);
+  }, [picked, questions]);
 
   const key = `${picked}-${items[0]?.id ?? 'empty'}-${items.length}`;
 

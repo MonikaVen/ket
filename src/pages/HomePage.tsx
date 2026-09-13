@@ -13,7 +13,7 @@ export function HomePage() {
           <h1>Išmok kelių eismo taisykles interaktyviai</h1>
           <p className="lead">
             Skyriai, ženklai, kortelės ir Regitros stiliaus egzaminas — pagal aktualią 2026-01-01
-            redakciją.
+            redakciją. Turinys atviras be paskyros; registracija išsaugo mokymosi istoriją.
           </p>
           <div className="hero-cta">
             <Link className="btn btn-primary" to="/mokytis">

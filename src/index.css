@@ -210,10 +210,64 @@ p {
   background: var(--accent-soft);
 }
 
-.btn-danger {
-  background: rgba(239, 93, 76, 0.15);
-  color: #ffb0a6;
-  border: 1px solid rgba(239, 93, 76, 0.35);
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+.form-card {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 560px;
+  padding: 1.25rem;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.form-card label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.form-card input,
+.form-card textarea,
+.form-card select {
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.form-error {
+  color: var(--danger);
+  margin: 0;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-table .bad-row {
+  background: rgba(239, 93, 76, 0.08);
 }
 
 .section-head {

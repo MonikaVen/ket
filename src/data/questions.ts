@@ -1,6 +1,7 @@
+import { chapters } from './chapters';
 import type { QuizQuestion } from './types';
 
-export const questions: QuizQuestion[] = [
+const seedQuestions: QuizQuestion[] = [
   {
     id: 'q1',
     chapterId: 'bendrosios',
@@ -686,14 +687,144 @@ export const questions: QuizQuestion[] = [
     correctIndex: 1,
     explanation: 'Įspėjamasis 101 — geležinkelio pervaža su pakeliamuoju užtvaru. „Kiti pavojai“ — 137.',
   },
+  {
+    id: 'q56',
+    chapterId: 'bendrosios',
+    question: 'Ar kiti eismo teisės aktai gali prieštarauti KET?',
+    options: [
+      'Taip, jei juos priėmė savivaldybė',
+      'Ne — įgyvendinamieji aktai negali prieštarauti Taisyklėms',
+      'Taip, jei tai policijos nurodymas',
+      'Tik žiemą',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 2 p.: kiti saugaus eismo įgyvendinamieji teisės aktai negali prieštarauti Taisyklėms.',
+  },
+  {
+    id: 'q57',
+    chapterId: 'savokos',
+    question: 'Kas yra dviračių gatvė?',
+    options: [
+      'Bet kuris dviračių takas',
+      'Kelias, pažymėtas ženklu „Dviračių gatvė“ (pabaiga — atitinkamu pabaigos ženklu)',
+      'Tik šaligatvis su dviračio simboliu',
+      'Automagistralės kraštinė juosta',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 3.21: dviračių gatvė prasideda ir baigiasi atitinkamais kelio ženklais.',
+  },
+  {
+    id: 'q58',
+    chapterId: 'dalyviai',
+    question: 'Ko privalo mokėti ir laikytis eismo dalyviai?',
+    options: [
+      'Tik kelio ženklų, KET nebūtinos',
+      'Taisyklių, elgtis pagarbiai ir atsargiai, paklusti teisėtiems pareigūnų reikalavimams',
+      'Tik automagistralėse',
+      'Tik jei turi vairuotojo pažymėjimą',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 4–7: eismo dalyviai privalo mokėti ir laikytis Taisyklių, elgtis atsargiai ir paklusti teisėtiems reikalavimams.',
+  },
+  {
+    id: 'q59',
+    chapterId: 'pestieji',
+    question: 'Ką vairuotojas privalo daryti pėsčiųjų perėjoje?',
+    options: [
+      'Signalizuoti ir važiuoti toliau',
+      'Duoti kelią pėstiesiems ir būti ypač atsargus prie mokyklų, stotelių, kai matomi vaikai',
+      'Sustoti tik jei pėstysis jau viduryje',
+      'Lenkti kitą automobilį perėjoje',
+    ],
+    correctIndex: 1,
+    explanation: 'KET 27–35: vairuotojas privalo duoti kelią pėstiesiems perėjose ir būti ypač atsargus ten, kur būna vaikų ar asmenų su negalia.',
+  },
 ];
+
+const RULE_ID: Record<string, string> = {
+  q1: 'b1',
+  q56: 'b2',
+  q41: 's1',
+  q2: 's2',
+  q3: 's3',
+  q4: 's4',
+  q31: 's5',
+  q57: 's6',
+  q5: 'd1',
+  q6: 'd1',
+  q40: 'd1',
+  q7: 'd2',
+  q30: 'd2',
+  q58: 'd3',
+  q10: 'v1',
+  q32: 'v1',
+  q8: 'v2',
+  q9: 'v3',
+  q45: 'v4',
+  q59: 'p1',
+  q11: 'p2',
+  q12: 'p2',
+  q13: 'dv1',
+  q14: 'dv2',
+  q44: 'dv2',
+  q50: 'dv2',
+  q54: 'm1',
+  q46: 'm2',
+  q47: 'm2',
+  q15: 'm3',
+  q38: 'm4',
+  q48: 'm4',
+  q49: 'm4',
+  q16: 'sg1',
+  q17: 'sg2',
+  q33: 'sg2',
+  q18: 'g1',
+  q19: 'g1',
+  q28: 'g1',
+  q37: 'g2',
+  q20: 'sk1',
+  q21: 'sk1',
+  q43: 'sk1',
+  q29: 'sk2',
+  q22: 'l1',
+  q34: 'l1',
+  q23: 'st1',
+  q35: 'st1',
+  q52: 'pv1',
+  q51: 'pv2',
+  q24: 'z1',
+  q25: 'z1',
+  q26: 'z1',
+  q36: 'z1',
+  q42: 'z1',
+  q53: 'z1',
+  q55: 'z1',
+  q27: 'sa1',
+  q39: 'sa1',
+};
+
+export const questions: QuizQuestion[] = seedQuestions.map((q) => ({
+  ...q,
+  ruleId: RULE_ID[q.id] ?? q.ruleId,
+}));
+
+export function getQuestionsForRule(ruleId: string, pool: QuizQuestion[] = questions): QuizQuestion[] {
+  return pool.filter((q) => q.ruleId === ruleId);
+}
+
+export function uncoveredRuleIds(pool: QuizQuestion[] = questions): string[] {
+  return chapters.flatMap((ch) => ch.rules.filter((r) => getQuestionsForRule(r.id, pool).length === 0).map((r) => r.id));
+}
 
 export const EXAM_QUESTION_COUNT = 30;
 export const EXAM_PASS_SCORE = 24;
 export const EXAM_MINUTES = 30;
 
-export function getQuestionsByChapter(chapterId: string): QuizQuestion[] {
-  return questions.filter((q) => q.chapterId === chapterId);
+export function getQuestionsByChapter(
+  chapterId: string,
+  pool: QuizQuestion[] = questions,
+): QuizQuestion[] {
+  return pool.filter((q) => q.chapterId === chapterId);
 }
 
 export function shuffle<T>(arr: T[]): T[] {
@@ -715,8 +846,8 @@ export function withShuffledOptions(q: QuizQuestion): QuizQuestion {
   };
 }
 
-export function pickExamQuestions(): QuizQuestion[] {
-  return shuffle(questions)
-    .slice(0, Math.min(EXAM_QUESTION_COUNT, questions.length))
+export function pickExamQuestions(pool: QuizQuestion[] = questions): QuizQuestion[] {
+  return shuffle(pool)
+    .slice(0, Math.min(EXAM_QUESTION_COUNT, pool.length))
     .map(withShuffledOptions);
 }

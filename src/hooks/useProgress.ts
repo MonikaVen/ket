@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { chapters } from '../data/chapters';
 import type { ChapterId } from '../data/types';
+import { apiOptional } from '../api/client';
+import { useAuth } from './useAuth';
 
 const STORAGE_KEY = 'ket-mokykla-progress-v1';
 
@@ -13,7 +15,7 @@ export interface ProgressState {
   lastStudyDate: string | null;
 }
 
-const defaultProgress: ProgressState = {
+export const defaultProgress: ProgressState = {
   studiedRules: [],
   masteredSigns: [],
   quizHistory: [],
@@ -22,7 +24,7 @@ const defaultProgress: ProgressState = {
   lastStudyDate: null,
 };
 
-function load(): ProgressState {
+function loadLocal(): ProgressState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...defaultProgress };
@@ -36,21 +38,68 @@ function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+export function mergeProgress(a: ProgressState, b: ProgressState | null | undefined): ProgressState {
+  if (!b) return a;
+  const chapterScores = { ...a.chapterScores };
+  for (const [k, v] of Object.entries(b.chapterScores)) {
+    const key = k as ChapterId;
+    chapterScores[key] = Math.max(chapterScores[key] ?? 0, v ?? 0);
+  }
+  const dates = [a.lastStudyDate, b.lastStudyDate].filter(Boolean).sort() as string[];
+  return {
+    studiedRules: [...new Set([...a.studiedRules, ...b.studiedRules])],
+    masteredSigns: [...new Set([...a.masteredSigns, ...b.masteredSigns])],
+    quizHistory: [...b.quizHistory, ...a.quizHistory].slice(0, 50),
+    chapterScores,
+    streak: Math.max(a.streak, b.streak),
+    lastStudyDate: dates.at(-1) ?? null,
+  };
+}
+
 export function useProgress() {
-  const [progress, setProgress] = useState<ProgressState>(defaultProgress);
+  const { user } = useAuth();
+  const [progress, setProgress] = useState<ProgressState>(loadLocal);
 
   useEffect(() => {
-    setProgress(load());
-  }, []);
+    let cancelled = false;
+    (async () => {
+      const local = loadLocal();
+      if (!user) {
+        if (!cancelled) setProgress(local);
+        return;
+      }
+      const remote = await apiOptional<{ progress: ProgressState | null }>('/progress');
+      const merged = mergeProgress(local, remote?.progress ?? null);
+      if (cancelled) return;
+      setProgress(merged);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      await apiOptional('/progress', {
+        method: 'PUT',
+        body: JSON.stringify({ progress: merged }),
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
-  const save = useCallback((next: ProgressState) => {
-    setProgress(next);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  }, []);
+  const save = useCallback(
+    (next: ProgressState) => {
+      setProgress(next);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      if (user) {
+        void apiOptional('/progress', {
+          method: 'PUT',
+          body: JSON.stringify({ progress: next }),
+        });
+      }
+    },
+    [user],
+  );
 
   const markRuleStudied = useCallback(
     (ruleId: string) => {
-      const base = load();
+      const base = loadLocal();
       if (base.studiedRules.includes(ruleId)) return;
       const last = base.lastStudyDate;
       const t = today();
@@ -73,7 +122,7 @@ export function useProgress() {
 
   const markSignMastered = useCallback(
     (signId: string) => {
-      const base = load();
+      const base = loadLocal();
       if (base.masteredSigns.includes(signId)) return;
       save({ ...base, masteredSigns: [...base.masteredSigns, signId] });
     },
@@ -82,7 +131,7 @@ export function useProgress() {
 
   const recordQuiz = useCallback(
     (score: number, total: number, mode: string, chapterId?: ChapterId) => {
-      const base = load();
+      const base = loadLocal();
       const chapterScores = { ...base.chapterScores };
       if (chapterId) {
         const pct = Math.round((score / total) * 100);
@@ -109,7 +158,13 @@ export function useProgress() {
   const resetProgress = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setProgress({ ...defaultProgress });
-  }, []);
+    if (user) {
+      void apiOptional('/progress', {
+        method: 'PUT',
+        body: JSON.stringify({ progress: defaultProgress }),
+      });
+    }
+  }, [user]);
 
   const totalRules = chapters.reduce((n, c) => n + c.rules.length, 0);
   const studiedPct = totalRules

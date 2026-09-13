@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const links = [
   { to: '/', label: 'Pradžia', end: true },
@@ -11,6 +12,8 @@ const links = [
 ];
 
 export function Nav() {
+  const { user, logout } = useAuth();
+
   return (
     <header className="nav">
       <NavLink to="/" className="nav-brand">
@@ -28,6 +31,25 @@ export function Nav() {
             {l.label}
           </NavLink>
         ))}
+        {user?.role === 'admin' && (
+          <NavLink to="/admin" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Admin
+          </NavLink>
+        )}
+        {user ? (
+          <>
+            <NavLink to="/paskyra" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+              {user.name}
+            </NavLink>
+            <button className="nav-link" type="button" onClick={logout}>
+              Išeiti
+            </button>
+          </>
+        ) : (
+          <NavLink to="/paskyra" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Paskyra
+          </NavLink>
+        )}
       </nav>
     </header>
   );

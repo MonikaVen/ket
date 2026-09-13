@@ -7,6 +7,7 @@ import {
   pickExamQuestions,
 } from '../data/questions';
 import type { QuizQuestion } from '../data/types';
+import { useContent } from '../hooks/useContent';
 import { useProgress } from '../hooks/useProgress';
 
 function emptyAnswers(count: number): (number | null)[] {
@@ -15,6 +16,7 @@ function emptyAnswers(count: number): (number | null)[] {
 
 export function ExamPage() {
   const { recordQuiz } = useProgress();
+  const { questions } = useContent();
   const [started, setStarted] = useState(false);
   const [items, setItems] = useState<QuizQuestion[]>([]);
   const [index, setIndex] = useState(0);
@@ -57,7 +59,7 @@ export function ExamPage() {
   }, [started, done, secondsLeft, finish]);
 
   const startExam = () => {
-    const next = pickExamQuestions();
+    const next = pickExamQuestions(questions);
     setItems(next);
     setAnswers(emptyAnswers(next.length));
     setIndex(0);

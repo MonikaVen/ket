@@ -1,11 +1,16 @@
 import { Link, useParams } from 'react-router-dom';
 import { getChapter } from '../data/chapters';
+import { getQuestionsForRule } from '../data/questions';
+import { useCards } from '../hooks/useCards';
+import { useContent } from '../hooks/useContent';
 import { useProgress } from '../hooks/useProgress';
 
 export function ChapterPage() {
   const { chapterId } = useParams();
   const chapter = getChapter(chapterId ?? '');
   const { progress, markRuleStudied } = useProgress();
+  const { addRuleCard, mine } = useCards();
+  const { questions } = useContent();
 
   if (!chapter) {
     return (
@@ -39,6 +44,8 @@ export function ChapterPage() {
       <div className="rule-list">
         {chapter.rules.map((rule, i) => {
           const studied = progress.studiedRules.includes(rule.id);
+          const inDeck = mine.some((c) => c.sourceId === rule.id || c.id === `rule-${rule.id}`);
+          const qCount = getQuestionsForRule(rule.id, questions).length;
           return (
             <article
               key={rule.id}
@@ -51,13 +58,23 @@ export function ChapterPage() {
               </div>
               <p className="body">{rule.text}</p>
               {rule.tip && <p className="tip">Patarimas: {rule.tip}</p>}
-              <div style={{ marginTop: '1rem' }}>
+              <p className="muted" style={{ marginTop: '0.65rem', fontSize: '0.85rem' }}>
+                Klausimų testuose: {qCount}
+              </p>
+              <div className="quiz-actions" style={{ marginTop: '1rem' }}>
                 <button
                   className={`btn ${studied ? 'btn-ghost' : 'btn-primary'}`}
                   onClick={() => markRuleStudied(rule.id)}
                   disabled={studied}
                 >
                   {studied ? 'Išmokta' : 'Pažymėti kaip išmoktą'}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  disabled={inDeck}
+                  onClick={() => void addRuleCard(rule.id)}
+                >
+                  {inDeck ? 'Jau kortelėse' : 'Į korteles'}
                 </button>
               </div>
             </article>
