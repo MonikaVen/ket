@@ -863,7 +863,7 @@ p {
 }
 
 .detail-panel {
-  margin-top: 1.25rem;
+  margin: 0 0 1.25rem;
   padding: 1.25rem;
   border-radius: var(--radius);
   background: var(--bg-elevated);
