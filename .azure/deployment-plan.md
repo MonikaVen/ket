@@ -1,6 +1,6 @@
 # Azure Deployment Plan
 
-> **Status:** Ready for Validation (auth blocked — live provision pending `azd auth login`)
+> **Status:** Validated
 
 Generated: 2026-09-16
 
@@ -21,12 +21,12 @@ Generated: 2026-09-16
 | Classification | POC / Development |
 | Scale | Small (occasional personal/study traffic) |
 | Budget | Cost-Optimized (target ~$0/month) |
-| **Subscription** | Not enumerable in this agent (Azure CLI / `azd` not logged in; Azure MCP `subscription_list` times out). `azd up` will use the subscription from `azd auth login`. |
+| **Subscription** | Subscription 1 (`c0c09570-b286-41a2-83c5-145c390a481c`) |
 | **Location** | northeurope (EU, closest to Lithuania; App Service Linux + App Insights + Log Analytics available) |
 
 ### Azure Context
 
-- **Subscription:** pending `azd auth login` (user/default after login)
+- **Subscription:** Subscription 1 (`c0c09570-b286-41a2-83c5-145c390a481c`), tenant Default Directory (`93a599ba-9536-4d33-af51-1c960872b413`)
 - **Location:** northeurope
 - **AZD environment name:** `ket-m4k8` (resource group `rg-ket-m4k8`)
 
@@ -93,22 +93,20 @@ No Key Vault (no secrets besides the app's local JSON store). No ACR, Container 
 
 | Resource Type | Number to Deploy | Total After Deployment | Limit/Quota | Notes |
 |---------------|------------------|------------------------|-------------|-------|
-| Microsoft.Web/serverfarms (F1) | 1 | 1 | 10 per region | Live `az quota` blocked (no CLI login). Official docs: 10 Free plans/region. Assumes 0 existing F1 plans. |
-| Microsoft.Web/sites | 1 | 1 | 10 apps per Free plan | Official docs: 10 apps per Free App Service plan. |
-| Microsoft.Resources/resourceGroups | 1 | 1 | 980 per subscription | Official docs. |
-| Microsoft.OperationalInsights/workspaces | 1 | 1 | 5000 per subscription | Official docs (quota CLI typically unsupported). |
-| Microsoft.Insights/components | 1 | 1 | 500 per subscription (typical default) | Official Monitor limits; workspace-based component. |
-| Microsoft.ManagedIdentity/userAssignedIdentities | 1 | 1 | 2000 per subscription | Official identity limits. |
+| Microsoft.Web/serverfarms (F1) | 1 | 1 | 10 per region | Live count 0. `az quota list` Microsoft.Quota unregistered; MCP reports No Limit. Official docs: 10 Free plans/region. |
+| Microsoft.Web/sites | 1 | 1 | 10 apps per Free plan | Live count 0. Official docs: 10 apps per Free plan. |
+| Microsoft.Resources/resourceGroups | 1 | 3 | 980 per subscription | Live count 2 (`rg-futureonaut`, auto-alerts). Official docs. |
+| Microsoft.OperationalInsights/workspaces | 1 | 2 | 5000 per subscription | Live count 1. Official docs; Insights quota CLI BadRequest. |
+| Microsoft.Insights/components | 1 | 1 | 500 per subscription (typical default) | Live count 0. |
+| Microsoft.ManagedIdentity/userAssignedIdentities | 1 | 1 | 2000 per subscription | Live count 0. |
 
 ### Phase 2: Fetch Quotas and Validate Capacity
 
-**Action:** azure-quotas skill required `az quota list` first. Azure CLI 2.90.0 is installed but **not logged in**. Azure MCP `quota_usage_check` / `group_list` / `subscription_list` require `--subscription` and `subscription_list` times out. Microsoft.Web is a known weak quota-API provider (often `BadRequest`).
+**Action:** `az quota list` for Microsoft.Web/northeurope returned `MissingRegistrationForResourceProvider` (Microsoft.Quota). Microsoft.Insights returned `BadRequest`. Azure MCP `quota_usage_check` returned limit/used 0 (“No Limit”). Fallback: `az resource list` counts + [Azure subscription service limits](https://learn.microsoft.com/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits).
 
-Fallback used: [Azure subscription service limits](https://learn.microsoft.com/azure/azure-resource-manager/management/azure-subscription-service-limits#azure-app-service-limits) + Azure Monitor limits.
+**Capacity:** No existing App Service plans or web apps. West Europe is blocked by policy `sys.blockwesteurope`; northeurope is allowed.
 
-**Capacity:** 1 of each resource is within default limits for an empty or lightly used subscription. If the target subscription already has 10 F1 plans in northeurope, provision will fail until one is removed or another region is used (`westeurope`).
-
-**Status:** ✅ All resources within default documented limits (live usage not queryable)
+**Status:** ✅ All resources within default documented limits
 
 ---
 
@@ -117,7 +115,7 @@ Fallback used: [Azure subscription service limits](https://learn.microsoft.com/a
 ### Phase 1: Planning
 - [x] Analyze workspace
 - [x] Gather requirements
-- [x] Confirm subscription and location with user (location: northeurope per cheapest EU; subscription pending login — background agent proceeding)
+- [x] Confirm subscription and location with user (Subscription 1 / northeurope; user asked to deploy)
 - [x] Prepare resource inventory (Step 6 Phase 1)
 - [x] Fetch quotas and validate capacity (official docs fallback)
 - [x] Scan codebase
@@ -133,20 +131,20 @@ Fallback used: [Azure subscription service limits](https://learn.microsoft.com/a
 
 ### Phase 3: Validation
 - [x] Invoke azure-validate skill
-- [ ] All validation checks pass
+- [x] All validation checks pass
   - [x] 1. AZD Installation
   - [x] 2. Schema Validation
-  - [x] 3. Environment Setup (`ket-m4k8`, location northeurope)
-  - [ ] 4. Authentication Check — **blocked:** `azd` / `az` not logged in
-  - [ ] 5. Subscription/Location Check — location set; subscription pending login
+  - [x] 3. Environment Setup (`ket-m4k8`, northeurope, subscription set)
+  - [x] 4. Authentication Check — logged in as monika.venckauskaite@gmail.com
+  - [x] 5. Subscription/Location Check — Subscription 1 / northeurope; `rg-ket-m4k8` does not exist
   - [x] 6. Aspire Pre-Provisioning Checks (N/A)
-  - [ ] 7. Provision Preview — **blocked:** `azd provision --preview` opens Azure login
+  - [x] 7. Provision Preview — creates rg, F1 plan, web app, App Insights, Log Analytics
   - [x] 8. Build Verification (`npm run build`)
   - [x] 9. Docker Build Context Validation (N/A — no Dockerfile)
   - [x] 10. Package Validation (`azd package`)
-  - [ ] 11. Azure Policy Validation — skipped (no subscription id)
+  - [x] 11. Azure Policy Validation — northeurope allowed; West Europe blocked (not used); MFA write already satisfied
   - [x] 12. Aspire Post-Provisioning Checks (N/A)
-- [ ] Update plan status to "Validated"
+- [x] Update plan status to "Validated"
 - [x] Record validation proof below
 
 ### Phase 4: Deployment
@@ -178,21 +176,22 @@ Fallback used: [Azure subscription service limits](https://learn.microsoft.com/a
 | Check | Command Run | Result | Timestamp |
 |-------|-------------|--------|-----------|
 | AZD install | `azd version` | ✅ 1.34.0 | 2026-09-16T19:38Z |
-| azure.yaml schema | Azure MCP `azd validate_azure_yaml` | ✅ valid against stable schema | 2026-09-16T19:47Z |
-| Bicep compile | `bicep build infra/main.bicep` | ✅ Bicep 0.47.16, ARM JSON 11.3 KB | 2026-09-16T19:55Z |
-| AZD environment | `azd env new ket-m4k8` + `azd env set AZURE_LOCATION northeurope` | ✅ `AZURE_ENV_NAME=ket-m4k8`, `AZURE_LOCATION=northeurope` | 2026-09-16T19:55Z |
-| Auth | `azd auth login --check-status` | ❌ Not logged in; browser OAuth requires Microsoft password | 2026-09-16T19:56Z |
-| Subscription | Azure MCP `subscription_list` | ❌ Timed out; quota/group tools require `--subscription` | 2026-09-16T19:48Z |
-| Provision preview | `azd provision --preview --no-prompt` | ❌ Opens Azure login (no session) | 2026-09-16T19:56Z |
+| azure.yaml schema | Azure MCP `azd validate_azure_yaml` | ✅ valid against stable schema | 2026-09-16T21:13Z |
+| Bicep compile | `bicep build infra/main.bicep` | ✅ Bicep 0.47.16 | 2026-09-16T19:55Z |
+| AZD environment | `azd env set AZURE_SUBSCRIPTION_ID` + location | ✅ ket-m4k8 / northeurope / c0c09570-b286-41a2-83c5-145c390a481c | 2026-09-16T21:13Z |
+| Auth | `azd auth login --check-status` | ✅ monika.venckauskaite@gmail.com | 2026-09-16T21:12Z |
+| Subscription | `az account show` | ✅ Subscription 1 | 2026-09-16T21:12Z |
+| RG conflict | `az group show rg-ket-m4k8` | ✅ not found (safe to create) | 2026-09-16T21:13Z |
+| Provision preview | `azd provision --preview --no-prompt` | ✅ create rg, F1 plan, web, App Insights, Log Analytics | 2026-09-16T21:14Z |
 | App build | `npm run build` | ✅ `dist/` produced | 2026-09-16T19:55Z |
-| Local health | `node server/index.mjs` + `curl /health` | ✅ 200 healthy | 2026-09-16T19:55Z |
+| Local health | `curl /health` | ✅ 200 healthy | 2026-09-16T19:55Z |
 | Package | `azd package --no-prompt` | ✅ zip for service `web` | 2026-09-16T19:56Z |
 | Docker context | no Dockerfile | ✅ N/A | 2026-09-16T19:56Z |
-| Azure Policy | MCP policy list | ⚠️ skipped — no subscription id | 2026-09-16T19:56Z |
+| Azure Policy | `policy_assignment_list` | ✅ northeurope allowed; `sys.blockwesteurope` N/A; MFA already done | 2026-09-16T21:14Z |
 | Static RBAC | review `infra/modules/app.bicep` | ✅ no data-plane roles required | 2026-09-16T19:55Z |
 
-**Validated by:** azure-validate skill (incomplete — Azure login required)
-**Validation timestamp:** 2026-09-16T19:56Z
+**Validated by:** azure-validate skill
+**Validation timestamp:** 2026-09-16T21:14Z
 
 ---
 
@@ -213,8 +212,8 @@ Fallback used: [Azure subscription service limits](https://learn.microsoft.com/a
 
 ## 9. Next Steps
 
-> Current: Ready for Validation
+> Current: Validated — running `azd up`
 
-1. Run azure-validate (schema, bicep build, `azd provision --preview` if authenticated)
-2. `azd up --no-prompt` after `azd auth login`
-3. Report `https://` WEB_URL
+1. `azd up --no-prompt`
+2. Verify `https://` WEB_URL and `/health`
+3. Report endpoint
