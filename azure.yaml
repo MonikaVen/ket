@@ -1,0 +1,8 @@
+name: ket-mokykla
+metadata:
+  template: ket-mokykla@0.0.1
+services:
+  web:
+    project: .
+    language: js
+    host: appservice
