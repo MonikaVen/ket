@@ -210,6 +210,16 @@ p {
   background: var(--accent-soft);
 }
 
+.btn-danger {
+  background: rgba(239, 93, 76, 0.16);
+  color: #ffb4ab;
+  border: 1px solid rgba(239, 93, 76, 0.4);
+}
+
+.btn-danger:hover {
+  background: rgba(239, 93, 76, 0.28);
+}
+
 .btn:disabled {
   opacity: 0.55;
   cursor: default;
@@ -371,6 +381,10 @@ p {
 
 .rule-card.studied {
   border-color: rgba(61, 186, 122, 0.35);
+}
+
+.rule-card.in-deck {
+  border-color: rgba(245, 197, 24, 0.35);
 }
 
 .rule-top {
@@ -556,7 +570,7 @@ p {
 .flash-card .sign-visual {
   width: 120px;
   height: 120px;
-  margin: 0;
+  margin: 0 auto;
 }
 
 .sign-card h3 {
@@ -597,14 +611,23 @@ p {
 }
 
 .flash-stage {
-  max-width: 480px;
+  width: 100%;
+  max-width: 880px;
   margin: 0 auto;
   perspective: 1000px;
 }
 
 .flash-card {
   position: relative;
-  min-height: 320px;
+  display: block;
+  width: 100%;
+  min-height: 24rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: inherit;
   transform-style: preserve-3d;
   transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
   cursor: pointer;
@@ -614,33 +637,199 @@ p {
   transform: rotateY(180deg);
 }
 
+.flash-sizer {
+  display: grid;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.flash-sizer-face {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  padding: 1.75rem 2rem;
+  gap: 1rem;
+  text-align: center;
+}
+
 .flash-face {
   position: absolute;
   inset: 0;
+  width: 100%;
+  overflow: visible;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateY(0deg);
   border-radius: var(--radius);
   background: linear-gradient(165deg, #182131, #121820);
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 1.75rem 2rem;
   gap: 1rem;
   box-shadow: var(--shadow);
+  text-align: center;
 }
 
 .flash-face.back {
   transform: rotateY(180deg);
-  text-align: center;
 }
 
-.flash-face h2 {
-  font-size: 1.4rem;
+.flash-face h2,
+.flash-sizer-face h2 {
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+  overflow-wrap: break-word;
 }
 
-.flash-face p {
+.flash-face p,
+.flash-sizer-face p {
   color: var(--muted);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.card-table {
+  position: relative;
+  border-radius: 22px;
+  padding: 1.2rem 1.15rem 1.5rem;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(245, 197, 24, 0.1), transparent 48%),
+    linear-gradient(165deg, #1a2418 0%, #10160f 55%, #0c120c 100%);
+  border: 1px solid rgba(245, 197, 24, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 24px 50px rgba(0, 0, 0, 0.35);
+}
+
+.card-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.15rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 1.15rem 0.9rem;
+}
+
+.deck-back {
+  position: relative;
+  aspect-ratio: 5 / 7;
+  width: 100%;
+  padding: 0.7rem 0.45rem;
+  border-radius: 12px;
+  border: 2px solid var(--accent);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(245, 197, 24, 0.08) 0 6px,
+      transparent 6px 12px
+    ),
+    linear-gradient(165deg, #243044, #141b26);
+  color: var(--accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transform: rotate(var(--tilt, 0deg));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+  animation: rise 0.4s ease both;
+}
+
+.deck-back:hover,
+.deck-back.active {
+  transform: translateY(-8px) rotate(var(--tilt, 0deg));
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.45);
+}
+
+.deck-back.learned {
+  border-color: var(--success);
+  opacity: 0.82;
+}
+
+.deck-back.ghost {
+  opacity: 0.28;
+  pointer-events: none;
+  transform: rotate(0deg);
+}
+
+.deck-back-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #121820;
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.deck-back.learned .deck-back-mark {
+  background: var(--success);
+  color: #0c1017;
+}
+
+.deck-back-kind {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e8d48a;
+}
+
+.deck-learned-badge {
+  position: absolute;
+  bottom: 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #8ee0b2;
+}
+
+.deck-empty {
+  text-align: center;
+  padding: 1rem 0 0.5rem;
+  color: var(--muted);
+}
+
+.deck-ghosts {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+
+.deck-ghosts .deck-back {
+  width: 92px;
+  flex: 0 0 92px;
+}
+
+.deck-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(8, 10, 14, 0.78);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  overflow: auto;
+}
+
+.deck-modal-panel {
+  width: min(880px, 100%);
+  animation: rise 0.25s ease;
 }
 
 .stat-row {
@@ -1019,5 +1208,14 @@ p {
 
   .hero {
     min-height: calc(100svh - 100px);
+  }
+
+  .deck-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 0.85rem 0.65rem;
+  }
+
+  .card-table {
+    padding: 1rem 0.85rem 1.2rem;
   }
 }

@@ -36,6 +36,22 @@ npm start
 
 React 19 · TypeScript · Vite · React Router · Express (JSON saugykla `data/store.json`)
 
+## Azure (cheapest for occasional use)
+
+Linux **App Service Free F1** (~€0) in **Poland Central** (North Europe has no F1 quota on this subscription). Live URL:
+
+**https://azwebc3mwzhycd4fny.azurewebsites.net/**
+
+The site sleeps after ~20 minutes idle and has **60 CPU minutes/day**. Remote Oryx builds count against that quota, so the app can show 403 “stopped” until the daily CPU grant resets. First load after sleep can take a minute.
+
+```bash
+azd auth login
+azd env select ket-m4k8
+azd deploy --no-prompt
+```
+
+`azd` prints the HTTPS URL (`https://….azurewebsites.net`) and creates resource group `rg-ket-m4k8`. App Insights and Log Analytics stay on the monthly free grant.
+
 ## Deploy to Lovable
 
 Publishing to `lovable.app` needs a Lovable account credential (this cloud agent cannot sign in for you).

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { SignVisual } from '../components/SignVisual';
 import { signCategories, signs } from '../data/signs';
 import type { SignCategory } from '../data/types';
+import { useCards } from '../hooks/useCards';
 import { useProgress } from '../hooks/useProgress';
 
 export function SignsPage() {
@@ -10,6 +11,7 @@ export function SignsPage() {
   const [query, setQuery] = useState('');
   const [activeId, setActiveId] = useState<string | null>(null);
   const { progress, markSignMastered } = useProgress();
+  const { addSignCard, hasSource } = useCards();
   const detailRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
@@ -84,16 +86,25 @@ export function SignsPage() {
               <span className="eyebrow">{active.code}</span>
               <h2 style={{ fontSize: '1.4rem', marginBottom: '0.4rem' }}>{active.name}</h2>
               <p style={{ color: 'var(--muted)' }}>{active.meaning}</p>
-              <button
-                className="btn btn-primary"
-                style={{ marginTop: '1rem' }}
-                disabled={progress.masteredSigns.includes(active.id)}
-                onClick={() => markSignMastered(active.id)}
-              >
-                {progress.masteredSigns.includes(active.id)
-                  ? 'Jau išmokote'
-                  : 'Pažymėti kaip išmoktą'}
-              </button>
+              <div className="quiz-actions" style={{ marginTop: '1rem' }}>
+                <button
+                  className="btn btn-primary"
+                  disabled={progress.masteredSigns.includes(active.id)}
+                  onClick={() => markSignMastered(active.id)}
+                >
+                  {progress.masteredSigns.includes(active.id)
+                    ? 'Jau išmokote'
+                    : 'Pažymėti kaip išmoktą'}
+                </button>
+                <button
+                  className={`btn ${hasSource(active.id) ? 'btn-ghost' : 'btn-primary'}`}
+                  type="button"
+                  disabled={hasSource(active.id)}
+                  onClick={() => void addSignCard(active.id)}
+                >
+                  {hasSource(active.id) ? 'Jau kaladėje' : 'Pridėti kortelę'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
