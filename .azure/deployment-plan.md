@@ -1,6 +1,6 @@
 # Azure Deployment Plan
 
-> **Status:** Validated
+> **Status:** Deployed
 
 Generated: 2026-09-16
 
@@ -148,10 +148,12 @@ No Key Vault (no secrets besides the app's local JSON store). No ACR, Container 
 - [x] Record validation proof below
 
 ### Phase 4: Deployment
-- [ ] Invoke azure-deploy skill
-- [ ] Deployment successful
-- [ ] Report deployed endpoint URLs
-- [ ] Update plan status to "Deployed"
+- [x] Invoke azure-deploy skill
+- [x] Deployment successful (`azd deploy` to `https://azwebc3mwzhycd4fny.azurewebsites.net/`)
+- [x] Report deployed endpoint URLs
+- [x] Update plan status to "Deployed"
+
+Runtime note: F1 `usageState=Exceeded` after Oryx builds used the 60 CPU min/day grant. Site returns 403 until the daily quota resets. North Europe F1 VM quota was 0; Poland Central succeeded.
 
 ---
 
@@ -212,8 +214,8 @@ No Key Vault (no secrets besides the app's local JSON store). No ACR, Container 
 
 ## 9. Next Steps
 
-> Current: Validated — running `azd up`
+> Current: Deployed
 
-1. `azd up --no-prompt`
-2. Verify `https://` WEB_URL and `/health`
-3. Report endpoint
+- App: https://azwebc3mwzhycd4fny.azurewebsites.net/
+- Resource group: https://portal.azure.com/#@/resource/subscriptions/c0c09570-b286-41a2-83c5-145c390a481c/resourceGroups/rg-ket-m4k8/overview
+- F1 daily CPU quota currently exceeded; retry after reset or scale to B1
