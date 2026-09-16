@@ -112,6 +112,11 @@ resource web 'Microsoft.Web/sites@2024-11-01' = {
           value: 'production'
         }
         {
+          // Oryx must install typescript/vite (devDependencies) to run `npm run build`.
+          name: 'NPM_CONFIG_PRODUCTION'
+          value: 'false'
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: appInsights.properties.ConnectionString
         }

@@ -38,12 +38,12 @@ React 19 · TypeScript · Vite · React Router · Express (JSON saugykla `data/s
 
 ## Azure (cheapest for occasional use)
 
-Linux **App Service Free F1** (~€0). The site sleeps after ~20 minutes idle and has 60 CPU minutes/day — enough for personal study. First load after sleep can take a minute.
+Linux **App Service Free F1** (~€0) in **Poland Central** (North Europe has no F1 quota on this subscription). The site sleeps after ~20 minutes idle and has 60 CPU minutes/day — enough for personal study. First load after sleep can take a minute.
 
 ```bash
 azd auth login
 azd env new ket-m4k8 --no-prompt
-azd env set AZURE_LOCATION northeurope
+azd env set AZURE_LOCATION polandcentral
 azd up --no-prompt
 ```
 
