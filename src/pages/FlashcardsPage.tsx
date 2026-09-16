@@ -180,33 +180,68 @@ function FlashCardView({
       onClick={onFlip}
       aria-label="Apversti kortelę"
     >
+      <div className="flash-sizer" aria-hidden="true">
+        <div className="flash-sizer-face">
+          <FlashFaceFront card={card} sign={sign} index={index} total={total} />
+        </div>
+        <div className="flash-sizer-face">
+          <FlashFaceBack card={card} sign={sign} />
+        </div>
+      </div>
       <div className="flash-face">
-        {sign ? (
-          <SignVisual sign={sign} className="sign-visual" />
-        ) : (
-          <h2>{card.front}</h2>
-        )}
-        <p>{sign ? 'Kas tai per ženklas?' : 'Kas tai?'}</p>
-        <span className="eyebrow" style={{ margin: 0 }}>
-          {index + 1} / {total}
-        </span>
+        <FlashFaceFront card={card} sign={sign} index={index} total={total} />
       </div>
       <div className="flash-face back">
-        {sign ? (
-          <>
-            <h2>{sign.name}</h2>
-            <p>{sign.meaning}</p>
-            <span className="eyebrow" style={{ margin: 0 }}>
-              Kodas {sign.code}
-            </span>
-          </>
-        ) : (
-          <>
-            <h2>{card.front}</h2>
-            <p>{card.back}</p>
-          </>
-        )}
+        <FlashFaceBack card={card} sign={sign} />
       </div>
     </button>
+  );
+}
+
+function FlashFaceFront({
+  card,
+  sign,
+  index,
+  total,
+}: {
+  card: ConceptCard;
+  sign: (typeof signs)[number] | undefined;
+  index: number;
+  total: number;
+}) {
+  return (
+    <>
+      {sign ? <SignVisual sign={sign} className="sign-visual" /> : <h2>{card.front}</h2>}
+      <p>{sign ? 'Kas tai per ženklas?' : 'Kas tai?'}</p>
+      <span className="eyebrow" style={{ margin: 0 }}>
+        {index + 1} / {total}
+      </span>
+    </>
+  );
+}
+
+function FlashFaceBack({
+  card,
+  sign,
+}: {
+  card: ConceptCard;
+  sign: (typeof signs)[number] | undefined;
+}) {
+  if (sign) {
+    return (
+      <>
+        <h2>{sign.name}</h2>
+        <p>{sign.meaning}</p>
+        <span className="eyebrow" style={{ margin: 0 }}>
+          Kodas {sign.code}
+        </span>
+      </>
+    );
+  }
+  return (
+    <>
+      <h2>{card.front}</h2>
+      <p>{card.back}</p>
+    </>
   );
 }
