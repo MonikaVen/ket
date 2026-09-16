@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { chapters } from '../data/chapters';
+import { useCards } from '../hooks/useCards';
 import { useProgress } from '../hooks/useProgress';
 
 export function StudyPage() {
   const { progress } = useProgress();
+  const { hasSource } = useCards();
 
   return (
     <div>
@@ -26,6 +28,7 @@ export function StudyPage() {
       <div className="grid-chapters">
         {chapters.map((ch, i) => {
           const studied = ch.rules.filter((r) => progress.studiedRules.includes(r.id)).length;
+          const inDeck = ch.rules.filter((r) => hasSource(r.id)).length;
           return (
             <Link
               key={ch.id}
@@ -38,6 +41,7 @@ export function StudyPage() {
               <p>{ch.summary}</p>
               <div className="meta">
                 {ch.rules.length} taisyklių · išmokta {studied}/{ch.rules.length}
+                {inDeck > 0 ? ` · kaladėje ${inDeck}` : ''}
                 {progress.chapterScores[ch.id] != null &&
                   ` · testas ${progress.chapterScores[ch.id]}%`}
               </div>

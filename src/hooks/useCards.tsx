@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { chapters } from '../data/chapters';
 import { signs } from '../data/signs';
 import type { ConceptCard } from '../data/types';
@@ -46,7 +54,39 @@ export function ruleToCard(ruleId: string): ConceptCard | null {
   return null;
 }
 
-export function useCards() {
+export function signToCard(signId: string): ConceptCard | null {
+  const sign = signs.find((s) => s.id === signId);
+  if (!sign) return null;
+  return {
+    id: `sign-${sign.id}`,
+    kind: 'sign',
+    front: sign.code,
+    back: `${sign.name}\n\n${sign.meaning}`,
+    sourceId: sign.id,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+interface CardsCtx {
+  mine: ConceptCard[];
+  globalCards: ConceptCard[];
+  allCards: ConceptCard[];
+  addCard: (input: {
+    front: string;
+    back: string;
+    kind?: ConceptCard['kind'];
+    sourceId?: string;
+  }) => Promise<ConceptCard>;
+  addRuleCard: (ruleId: string) => Promise<ConceptCard | undefined>;
+  addSignCard: (signId: string) => Promise<ConceptCard | undefined>;
+  addChapterCards: (chapterId: string) => Promise<number>;
+  removeCard: (id: string) => Promise<void>;
+  hasSource: (sourceId: string) => boolean;
+}
+
+const Ctx = createContext<CardsCtx | null>(null);
+
+export function CardsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { globalCards } = useContent();
   const [mine, setMine] = useState<ConceptCard[]>(() => loadLocal());
@@ -129,19 +169,57 @@ export function useCards() {
     [user],
   );
 
+  const hasSource = useCallback(
+    (sourceId: string) =>
+      [...mine, ...globalCards].some(
+        (c) => c.sourceId === sourceId || c.id === `rule-${sourceId}` || c.id === `sign-${sourceId}`,
+      ),
+    [mine, globalCards],
+  );
+
   const addRuleCard = useCallback(
     async (ruleId: string) => {
       const card = ruleToCard(ruleId);
       if (!card) return;
-      if (mine.some((c) => c.sourceId === ruleId || c.id === card.id)) return;
-      await addCard({
+      if (hasSource(ruleId) || loadLocal().some((c) => c.sourceId === ruleId)) return;
+      return addCard({
         front: card.front,
         back: card.back,
         kind: 'rule',
         sourceId: ruleId,
       });
     },
-    [addCard, mine],
+    [addCard, hasSource],
+  );
+
+  const addSignCard = useCallback(
+    async (signId: string) => {
+      const card = signToCard(signId);
+      if (!card) return;
+      if (hasSource(signId) || loadLocal().some((c) => c.sourceId === signId)) return;
+      return addCard({
+        front: card.front,
+        back: card.back,
+        kind: 'sign',
+        sourceId: signId,
+      });
+    },
+    [addCard, hasSource],
+  );
+
+  const addChapterCards = useCallback(
+    async (chapterId: string) => {
+      const chapter = chapters.find((ch) => ch.id === chapterId);
+      if (!chapter) return 0;
+      let added = 0;
+      for (const rule of chapter.rules) {
+        const before = loadLocal().length;
+        await addRuleCard(rule.id);
+        if (loadLocal().length > before) added += 1;
+      }
+      return added;
+    },
+    [addRuleCard],
   );
 
   const removeCard = useCallback(
@@ -154,24 +232,32 @@ export function useCards() {
     [user],
   );
 
-  const signCards: ConceptCard[] = useMemo(
-    () =>
-      signs.map((s) => ({
-        id: `sign-${s.id}`,
-        kind: 'sign',
-        front: s.code,
-        back: `${s.name}\n\n${s.meaning}`,
-        sourceId: s.id,
-        createdAt: '',
-      })),
-    [],
-  );
-
   const allCards = useMemo(() => {
     const byId = new Map<string, ConceptCard>();
-    for (const c of [...signCards, ...globalCards, ...mine]) byId.set(c.id, c);
+    for (const c of [...globalCards, ...mine]) byId.set(c.id, c);
     return [...byId.values()];
-  }, [signCards, globalCards, mine]);
+  }, [globalCards, mine]);
 
-  return { mine, globalCards, signCards, allCards, addCard, addRuleCard, removeCard };
+  const value = useMemo(
+    () => ({
+      mine,
+      globalCards,
+      allCards,
+      addCard,
+      addRuleCard,
+      addSignCard,
+      addChapterCards,
+      removeCard,
+      hasSource,
+    }),
+    [mine, globalCards, allCards, addCard, addRuleCard, addSignCard, addChapterCards, removeCard, hasSource],
+  );
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+export function useCards() {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error('useCards requires CardsProvider');
+  return ctx;
 }

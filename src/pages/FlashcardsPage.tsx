@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { SignVisual } from '../components/SignVisual';
 import { signs } from '../data/signs';
@@ -8,17 +8,40 @@ import { useAuth } from '../hooks/useAuth';
 import { useCards } from '../hooks/useCards';
 import { useProgress } from '../hooks/useProgress';
 
+const LEARNED_KEY = 'ket-mokykla-deck-learned-v1';
+
+const kindLabel: Record<CardKind, string> = {
+  sign: 'Ženklas',
+  rule: 'Taisyklė',
+  concept: 'Sąvoka',
+};
+
+function loadLearned(): Set<string> {
+  try {
+    const raw = localStorage.getItem(LEARNED_KEY);
+    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveLearned(ids: Set<string>) {
+  localStorage.setItem(LEARNED_KEY, JSON.stringify([...ids]));
+}
+
 export function FlashcardsPage() {
   const { allCards, mine, addCard, removeCard } = useCards();
-  const { markSignMastered, progress } = useProgress();
+  const { markSignMastered, markRuleStudied, progress } = useProgress();
   const { user } = useAuth();
   const [filter, setFilter] = useState<CardKind | 'all'>('all');
   const [front, setFront] = useState('');
   const [back, setBack] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [pinnedId, setPinnedId] = useState<string | null>(null);
-  const [i, setI] = useState(0);
+  const [order, setOrder] = useState<string[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [flipped, setFlipped] = useState(false);
+  const [learnedIds, setLearnedIds] = useState<Set<string>>(loadLearned);
+  const [shufflePulse, setShufflePulse] = useState(0);
 
   const counts = useMemo(
     () => ({
@@ -30,36 +53,71 @@ export function FlashcardsPage() {
     [allCards],
   );
 
-  const filtered = useMemo(
-    () => (filter === 'all' ? allCards : allCards.filter((c) => c.kind === filter)),
-    [allCards, filter],
-  );
-  const deck = useMemo(() => {
-    const custom = shuffle(filtered.filter((c) => c.kind !== 'sign'));
-    const signDeck = shuffle(filtered.filter((c) => c.kind === 'sign'));
-    const ordered = filter === 'sign' ? signDeck : [...custom, ...signDeck];
-    if (!pinnedId) return ordered;
-    const idx = ordered.findIndex((c) => c.id === pinnedId);
-    if (idx <= 0) return ordered;
-    const next = [...ordered];
-    const [pinned] = next.splice(idx, 1);
-    next.unshift(pinned);
-    return next;
-  }, [filtered, filter, pinnedId]);
-  const card = deck.length ? deck[i % deck.length] : undefined;
+  useEffect(() => {
+    setOrder((prev) => {
+      const ids = allCards.map((c) => c.id);
+      const idSet = new Set(ids);
+      const kept = prev.filter((id) => idSet.has(id));
+      const keptSet = new Set(kept);
+      const added = ids.filter((id) => !keptSet.has(id));
+      return [...added, ...kept];
+    });
+  }, [allCards]);
 
-  const selectFilter = (id: CardKind | 'all') => {
-    setFilter(id);
-    setPinnedId(null);
-    setI(0);
+  const tableCards = useMemo(() => {
+    const byId = new Map(allCards.map((c) => [c.id, c]));
+    return order
+      .map((id) => byId.get(id))
+      .filter((c): c is ConceptCard => {
+        if (!c) return false;
+        return filter === 'all' || c.kind === filter;
+      });
+  }, [order, allCards, filter]);
+
+  const openCard = tableCards.find((c) => c.id === openId) ?? allCards.find((c) => c.id === openId);
+  const learnedCount = tableCards.filter((c) => learnedIds.has(c.id)).length;
+
+  useEffect(() => {
+    if (!openId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpenId(null);
+        setFlipped(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [openId]);
+
+  const closeOpen = () => {
+    setOpenId(null);
     setFlipped(false);
   };
 
-  const next = (mastered: boolean) => {
-    if (mastered && card?.kind === 'sign' && card.sourceId) markSignMastered(card.sourceId);
+  const openCardAt = (id: string) => {
+    setOpenId(id);
     setFlipped(false);
-    if (!deck.length) return;
-    setTimeout(() => setI((x) => (x + 1) % deck.length), 180);
+  };
+
+  const reshuffle = () => {
+    const shuffled = shuffle(tableCards).map((c) => c.id);
+    const shuffledSet = new Set(shuffled);
+    setOrder((prev) => [...shuffled, ...prev.filter((id) => !shuffledSet.has(id))]);
+    setShufflePulse((n) => n + 1);
+    closeOpen();
+  };
+
+  const markLearned = () => {
+    if (!openCard) return;
+    setLearnedIds((prev) => {
+      const next = new Set(prev);
+      next.add(openCard.id);
+      saveLearned(next);
+      return next;
+    });
+    if (openCard.kind === 'sign' && openCard.sourceId) markSignMastered(openCard.sourceId);
+    if (openCard.kind === 'rule' && openCard.sourceId) markRuleStudied(openCard.sourceId);
+    closeOpen();
   };
 
   const submitCard = async (e: FormEvent) => {
@@ -69,9 +127,20 @@ export function FlashcardsPage() {
     setBack('');
     setShowForm(false);
     setFilter('concept');
-    setPinnedId(created.id);
-    setI(0);
-    setFlipped(false);
+    openCardAt(created.id);
+  };
+
+  const removeOpen = async () => {
+    if (!openCard) return;
+    const id = openCard.id;
+    closeOpen();
+    setLearnedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      saveLearned(next);
+      return next;
+    });
+    await removeCard(id);
   };
 
   return (
@@ -81,13 +150,14 @@ export function FlashcardsPage() {
           <span className="eyebrow">Kartojimas</span>
           <h1>Mokymosi kortelės</h1>
           <p>
-            Ženklai, taisyklės ir jūsų sąvokos. {progress.masteredSigns.length}/{signs.length}{' '}
-            ženklų išmokta.
+            Kaladė ant stalo — visos kortelės užverstos. Atidarykite, perskaitykite, tada pažymėkite
+            kaip išmoktą arba uždarykite. {progress.masteredSigns.length}/{signs.length} ženklų
+            išmokta.
             {!user && ' Prisijunkite, kad kortelės išsisaugotų paskyroje.'}
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? 'Uždaryti' : 'Pridėti sąvoką'}
+        <button className="btn btn-primary" type="button" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? 'Uždaryti formą' : 'Pridėti sąvoką'}
         </button>
       </div>
 
@@ -118,43 +188,115 @@ export function FlashcardsPage() {
         ).map(([id, label]) => (
           <button
             key={id}
+            type="button"
             className={`chip${filter === id ? ' active' : ''}`}
-            onClick={() => selectFilter(id)}
+            onClick={() => {
+              setFilter(id);
+              closeOpen();
+            }}
           >
             {label} ({counts[id]})
           </button>
         ))}
       </div>
 
-      {!card ? (
-        <p className="empty">
-          Šioje grupėje kortelių nėra.{' '}
-          {filter === 'rule' ? 'Skyriuje spauskite „Į korteles“ prie taisyklės.' : 'Pridėkite sąvoką.'}
-        </p>
-      ) : (
-        <div className="flash-stage">
-          <FlashCardView card={card} flipped={flipped} onFlip={() => setFlipped((f) => !f)} index={i} total={deck.length} />
-          <div className="quiz-actions" style={{ justifyContent: 'center', marginTop: '1.25rem' }}>
-            <button className="btn btn-ghost" onClick={() => next(false)}>
-              Dar mokysiuosi
-            </button>
-            <button className="btn btn-primary" onClick={() => next(true)}>
-              Moku
-            </button>
-            {mine.some((c) => c.id === card.id) && (
-              <button className="btn btn-danger" onClick={() => void removeCard(card.id)}>
-                Šalinti
+      <div className="card-table">
+        <div className="card-table-toolbar">
+          <p>
+            {tableCards.length
+              ? `${tableCards.length} kortelės ant stalo · ${learnedCount} išmokta`
+              : 'Kaladė tuščia'}
+          </p>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            onClick={reshuffle}
+            disabled={tableCards.length < 2}
+          >
+            Permaišyti
+          </button>
+        </div>
+
+        {tableCards.length === 0 ? (
+          <div className="deck-empty">
+            <div className="deck-ghosts" aria-hidden="true">
+              <span className="deck-back ghost" />
+              <span className="deck-back ghost" />
+              <span className="deck-back ghost" />
+            </div>
+            <p>
+              {filter === 'all'
+                ? 'Skyriuje spauskite „Pridėti kortelę“, kad taisyklė patektų į kaladę.'
+                : 'Šioje grupėje kortelių nėra.'}
+            </p>
+            <p className="quiz-actions" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
+              <Link className="btn btn-primary" to="/mokytis">
+                Eiti mokytis
+              </Link>
+              {filter !== 'all' && (
+                <button className="btn btn-ghost" type="button" onClick={() => setFilter('all')}>
+                  Rodyti visas
+                </button>
+              )}
+            </p>
+          </div>
+        ) : (
+          <div className="deck-grid" key={shufflePulse}>
+            {tableCards.map((card, i) => (
+              <button
+                key={card.id}
+                type="button"
+                className={`deck-back${learnedIds.has(card.id) ? ' learned' : ''}${
+                  openId === card.id ? ' active' : ''
+                }`}
+                style={{ ['--tilt' as string]: `${((i * 17) % 7) - 3}deg` }}
+                onClick={() => openCardAt(card.id)}
+                aria-label={`Atidaryti kortelę: ${kindLabel[card.kind]}`}
+              >
+                <span className="deck-back-mark">K</span>
+                <span className="deck-back-kind">{kindLabel[card.kind]}</span>
+                {learnedIds.has(card.id) && <span className="deck-learned-badge">Išmokta</span>}
               </button>
-            )}
+            ))}
+          </div>
+        )}
+      </div>
+
+      {openCard && (
+        <div
+          className="deck-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Atidaryta kortelė"
+          onClick={closeOpen}
+        >
+          <div className="deck-modal-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="flash-stage">
+              <FlashCardView
+                card={openCard}
+                flipped={flipped}
+                onFlip={() => setFlipped((f) => !f)}
+              />
+            </div>
+            <p className="muted" style={{ textAlign: 'center', marginTop: '0.85rem' }}>
+              {flipped ? 'Spustelėkite kortelę, kad užverstumėte.' : 'Spustelėkite kortelę, kad pamatytumėte atsakymą.'}
+            </p>
+            <div className="quiz-actions" style={{ justifyContent: 'center' }}>
+              <button className="btn btn-ghost" type="button" onClick={closeOpen}>
+                Uždaryti
+              </button>
+              <button className="btn btn-primary" type="button" onClick={markLearned}>
+                Išmokta
+              </button>
+              {mine.some((c) => c.id === openCard.id) && (
+                <button className="btn btn-danger" type="button" onClick={() => void removeOpen()}>
+                  Šalinti
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
-
-      <p style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-        <Link className="btn btn-ghost" to="/zenklai">
-          Ženklų sąrašas
-        </Link>
-      </p>
     </div>
   );
 }
@@ -163,14 +305,10 @@ function FlashCardView({
   card,
   flipped,
   onFlip,
-  index,
-  total,
 }: {
   card: ConceptCard;
   flipped: boolean;
   onFlip: () => void;
-  index: number;
-  total: number;
 }) {
   const sign = card.kind === 'sign' ? signs.find((s) => s.id === card.sourceId) : undefined;
   return (
@@ -182,14 +320,14 @@ function FlashCardView({
     >
       <div className="flash-sizer" aria-hidden="true">
         <div className="flash-sizer-face">
-          <FlashFaceFront card={card} sign={sign} index={index} total={total} />
+          <FlashFaceFront card={card} sign={sign} />
         </div>
         <div className="flash-sizer-face">
           <FlashFaceBack card={card} sign={sign} />
         </div>
       </div>
       <div className="flash-face">
-        <FlashFaceFront card={card} sign={sign} index={index} total={total} />
+        <FlashFaceFront card={card} sign={sign} />
       </div>
       <div className="flash-face back">
         <FlashFaceBack card={card} sign={sign} />
@@ -201,20 +339,16 @@ function FlashCardView({
 function FlashFaceFront({
   card,
   sign,
-  index,
-  total,
 }: {
   card: ConceptCard;
   sign: (typeof signs)[number] | undefined;
-  index: number;
-  total: number;
 }) {
   return (
     <>
       {sign ? <SignVisual sign={sign} className="sign-visual" /> : <h2>{card.front}</h2>}
       <p>{sign ? 'Kas tai per ženklas?' : 'Kas tai?'}</p>
       <span className="eyebrow" style={{ margin: 0 }}>
-        {index + 1} / {total}
+        {kindLabel[card.kind]}
       </span>
     </>
   );
