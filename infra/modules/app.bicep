@@ -117,6 +117,10 @@ resource web 'Microsoft.Web/sites@2024-11-01' = {
           value: 'false'
         }
         {
+          name: 'PRE_BUILD_COMMAND'
+          value: 'npm install --include=dev'
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: appInsights.properties.ConnectionString
         }
