@@ -16,15 +16,44 @@ export function FlashcardsPage() {
   const [front, setFront] = useState('');
   const [back, setBack] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [i, setI] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+
+  const counts = useMemo(
+    () => ({
+      all: allCards.length,
+      sign: allCards.filter((c) => c.kind === 'sign').length,
+      rule: allCards.filter((c) => c.kind === 'rule').length,
+      concept: allCards.filter((c) => c.kind === 'concept').length,
+    }),
+    [allCards],
+  );
 
   const filtered = useMemo(
     () => (filter === 'all' ? allCards : allCards.filter((c) => c.kind === filter)),
     [allCards, filter],
   );
-  const deck = useMemo(() => shuffle(filtered), [filtered]);
-  const [i, setI] = useState(0);
-  const [flipped, setFlipped] = useState(false);
+  const deck = useMemo(() => {
+    const custom = shuffle(filtered.filter((c) => c.kind !== 'sign'));
+    const signDeck = shuffle(filtered.filter((c) => c.kind === 'sign'));
+    const ordered = filter === 'sign' ? signDeck : [...custom, ...signDeck];
+    if (!pinnedId) return ordered;
+    const idx = ordered.findIndex((c) => c.id === pinnedId);
+    if (idx <= 0) return ordered;
+    const next = [...ordered];
+    const [pinned] = next.splice(idx, 1);
+    next.unshift(pinned);
+    return next;
+  }, [filtered, filter, pinnedId]);
   const card = deck.length ? deck[i % deck.length] : undefined;
+
+  const selectFilter = (id: CardKind | 'all') => {
+    setFilter(id);
+    setPinnedId(null);
+    setI(0);
+    setFlipped(false);
+  };
 
   const next = (mastered: boolean) => {
     if (mastered && card?.kind === 'sign' && card.sourceId) markSignMastered(card.sourceId);
@@ -35,10 +64,14 @@ export function FlashcardsPage() {
 
   const submitCard = async (e: FormEvent) => {
     e.preventDefault();
-    await addCard({ front, back, kind: 'concept' });
+    const created = await addCard({ front, back, kind: 'concept' });
     setFront('');
     setBack('');
     setShowForm(false);
+    setFilter('concept');
+    setPinnedId(created.id);
+    setI(0);
+    setFlipped(false);
   };
 
   return (
@@ -86,13 +119,9 @@ export function FlashcardsPage() {
           <button
             key={id}
             className={`chip${filter === id ? ' active' : ''}`}
-            onClick={() => {
-              setFilter(id);
-              setI(0);
-              setFlipped(false);
-            }}
+            onClick={() => selectFilter(id)}
           >
-            {label}
+            {label} ({counts[id]})
           </button>
         ))}
       </div>
@@ -146,6 +175,7 @@ function FlashCardView({
   const sign = card.kind === 'sign' ? signs.find((s) => s.id === card.sourceId) : undefined;
   return (
     <button
+      type="button"
       className={`flash-card${flipped ? ' flipped' : ''}`}
       onClick={onFlip}
       aria-label="Apversti kortelę"
@@ -154,7 +184,7 @@ function FlashCardView({
         {sign ? (
           <SignVisual sign={sign} className="sign-visual" />
         ) : (
-          <h2 style={{ fontSize: '1.25rem', textAlign: 'center' }}>{card.front}</h2>
+          <h2>{card.front}</h2>
         )}
         <p>{sign ? 'Kas tai per ženklas?' : 'Kas tai?'}</p>
         <span className="eyebrow" style={{ margin: 0 }}>
@@ -173,7 +203,7 @@ function FlashCardView({
         ) : (
           <>
             <h2>{card.front}</h2>
-            <p style={{ whiteSpace: 'pre-wrap' }}>{card.back}</p>
+            <p>{card.back}</p>
           </>
         )}
       </div>

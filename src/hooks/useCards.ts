@@ -21,6 +21,15 @@ function saveLocal(cards: ConceptCard[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
 }
 
+function isSameSource(a: ConceptCard, b: ConceptCard) {
+  return Boolean(a.sourceId) && a.sourceId === b.sourceId;
+}
+
+function mergeCard(cards: ConceptCard[], card: ConceptCard, ...dropIds: Array<string | undefined>) {
+  const drop = new Set(dropIds.filter(Boolean) as string[]);
+  return [...cards.filter((c) => c.id !== card.id && !drop.has(c.id) && !isSameSource(c, card)), card];
+}
+
 export function ruleToCard(ruleId: string): ConceptCard | null {
   for (const ch of chapters) {
     const rule = ch.rules.find((r) => r.id === ruleId);
@@ -98,19 +107,23 @@ export function useCards() {
         ownerId: user?.id,
         createdAt: new Date().toISOString(),
       };
+      const optimistic = mergeCard(loadLocal(), localCard);
+      saveLocal(optimistic);
+      setMine(optimistic);
       if (user) {
-        const data = await api<{ card: ConceptCard }>('/cards', {
-          method: 'POST',
-          body: JSON.stringify(input),
-        });
-        const next = [...loadLocal().filter((c) => c.id !== data.card.id), data.card];
-        saveLocal(next);
-        setMine(next);
-        return data.card;
+        try {
+          const data = await api<{ card: ConceptCard }>('/cards', {
+            method: 'POST',
+            body: JSON.stringify(input),
+          });
+          const next = mergeCard(loadLocal(), data.card, localCard.id);
+          saveLocal(next);
+          setMine(next);
+          return data.card;
+        } catch {
+          return localCard;
+        }
       }
-      const next = [...loadLocal().filter((c) => c.id !== localCard.id && c.sourceId !== localCard.sourceId), localCard];
-      saveLocal(next);
-      setMine(next);
       return localCard;
     },
     [user],
